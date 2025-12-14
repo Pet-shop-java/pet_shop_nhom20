@@ -28,8 +28,6 @@ public class OrderResponse {
 
     double discountPercent;
 
-    String paymentMethods;
-
     String shippingAddress;
 
     String note;

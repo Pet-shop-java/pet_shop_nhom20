@@ -1,7 +1,11 @@
 package com.webpet_nhom20.backdend.config;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -11,18 +15,38 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
+
+@Configuration
 public class VnPayConfig {
 
     @Value("${vnp_TmnCode}")
-    private static String tmnCode;
+    private String tmnCode;
 
-    @Value(("{vnp_HashSecret}"))
-    private static String vnpSecretKey;
+    @Value("${vnp_HashSecret}")
+    private String vnpSecretKey;
+
+    @Value("${vnp_Version}")
+    private String vnpVersion;
+
+    @Value("${vnp_Command}")
+    private String vnpCommand;
 
     public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
     public static String vnp_ReturnUrl = "http://localhost:8080/vnpay_jsp/vnpay_return.jsp";
-    public static String vnp_TmnCode = tmnCode;
-    public static String secretKey = vnpSecretKey;
+
+    public static String vnp_TmnCode ;
+    public static String secretKey ;
+
+    public static String vnp_Version ;
+    public static String vnp_Command ;
+    @PostConstruct
+    public void init() {
+        vnp_TmnCode = tmnCode;
+        secretKey  = vnpSecretKey;
+        vnp_Version = vnpVersion;
+        vnp_Command = vnpCommand;
+    }
+
     public static String vnp_ApiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
 
 //    public static String md5(String message) {

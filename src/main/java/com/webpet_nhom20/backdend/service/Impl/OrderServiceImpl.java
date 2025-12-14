@@ -1,5 +1,6 @@
 package com.webpet_nhom20.backdend.service.Impl;
 
+import com.nimbusds.jwt.SignedJWT;
 import com.webpet_nhom20.backdend.config.JwtTokenProvider;
 import com.webpet_nhom20.backdend.dto.request.Order.OrderRequest;
 import com.webpet_nhom20.backdend.dto.request.OrderItem.OrderItemRequest;
@@ -10,13 +11,20 @@ import com.webpet_nhom20.backdend.entity.OrderItems;
 import com.webpet_nhom20.backdend.entity.ProductVariants;
 import com.webpet_nhom20.backdend.entity.User;
 import com.webpet_nhom20.backdend.enums.OrderStatus;
+import com.webpet_nhom20.backdend.exception.AppException;
+import com.webpet_nhom20.backdend.exception.ErrorCode;
 import com.webpet_nhom20.backdend.repository.OrderItemRepository;
 import com.webpet_nhom20.backdend.repository.OrderRepository;
 import com.webpet_nhom20.backdend.repository.ProductVariantRepository;
 import com.webpet_nhom20.backdend.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.security.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -41,11 +49,25 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private ProductVariantRepository productVariantRepository;
     @Override
-    public OrderResponse createOrder(OrderRequest request, String token) {
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public OrderResponse createOrder(OrderRequest request) {
 
         BigDecimal itemsTotal = BigDecimal.ZERO;
 
-        Integer userIdFromToken = jwtTokenProvider.getUserId(token);
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        Jwt jwt =(Jwt)  authentication.getPrincipal();
+
+
+        Number userIdClaim = jwt.getClaim("id");
+        Integer userIdFromToken =userIdClaim.intValue();
+
+
 
         // ================== 1. TÍNH TỔNG TIỀN ITEMS ==================
         for (OrderItemRequest itemReq : request.getItems()) {
@@ -90,7 +112,7 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalAmount(totalAmount);         // ✅ BigDecimal
         order.setShippingAmount(shippingAmount);   // ✅ BigDecimal
         order.setDiscountPercent(discountPercent); // ✅ vẫn FLOAT
-        order.setStatus(OrderStatus.PENDING.name());
+        order.setStatus(OrderStatus.WAITING_PAYMENT.name());
         order.setShippingAddress(request.getShippingAddress());
         order.setIsDeleted("0");
         order.setNote(request.getNote());

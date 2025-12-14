@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,12 +24,12 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("/create")
+
     public ResponseEntity<ApiResponse<OrderResponse>> createOrder(
-            @RequestHeader("Authorization") String token,
             @RequestBody @Valid OrderRequest request
     ) {
 
-        OrderResponse orderResponse = orderService.createOrder(request, token);
+        OrderResponse orderResponse = orderService.createOrder(request);
 
         ApiResponse<OrderResponse> response = ApiResponse.<OrderResponse>builder()
                 .success(true)

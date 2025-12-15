@@ -25,11 +25,13 @@ public class ProductController {
 
     @GetMapping()
     public ApiResponse<Page<ProductResponse>> getAllProducts(@RequestParam(required = false) String search, @RequestParam(required = false) Integer categoryId,
-                                                             Pageable pageable, @RequestParam (required = false) Double minPrice, @RequestParam(required = false) Double maxPrice, @RequestParam (required = false) String animal, @RequestParam (required = false) String brand, @RequestParam (required = false) String isFeature){
+                                                             Pageable pageable, @RequestParam (required = false) Double minPrice, @RequestParam(required = false) Double maxPrice,
+                                                             @RequestParam (required = false) String animal, @RequestParam (required = false) String brand,
+                                                             @RequestParam (required = false) String isFeature, @RequestParam (required = false) String isDelete){
         return ApiResponse.<Page<ProductResponse>>builder().
                 success(true)
                 .message("Lấy danh sách sản phẩm thành công")
-                .result(productService.getAllProduct(pageable,categoryId,search,minPrice, maxPrice, animal , brand, isFeature)).build();
+                .result(productService.getAllProduct(pageable,categoryId,search,minPrice, maxPrice, animal , brand, isFeature, isDelete)).build();
     }
     @GetMapping("/{productId}")
     public ApiResponse<ProductResponse> getProductById(@PathVariable int productId ){

@@ -20,7 +20,7 @@ public interface ProductService {
 
     public String deleteProduct(int productId);
 
-    Page<ProductResponse> getAllProduct(Pageable pageable, Integer categoryId, String search, Double minPrice, Double maxPrice, String animal, String brand, String isFeature);
+    Page<ProductResponse> getAllProduct(Pageable pageable, Integer categoryId, String search, Double minPrice, Double maxPrice, String animal, String brand, String isFeature, String isDelete);
 
     ProductResponse getProductById(int productId);
 

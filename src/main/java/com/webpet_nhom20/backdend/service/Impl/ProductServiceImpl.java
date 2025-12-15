@@ -75,8 +75,8 @@ public class ProductServiceImpl implements ProductService {
     }
 
         @Override
-        @Cacheable(value = "product_list", key = "{#pageable.pageNumber, #pageable.pageSize, #pageable.sort, #categoryId, #search, #minPrice, #maxPrice, #animal, #brand, #isFeature}")
-        public Page<ProductResponse> getAllProduct(Pageable pageable, Integer categoryId, String search, Double minPrice, Double maxPrice, String animal, String brand, String isFeature) {
+        @Cacheable(value = "product_list", key = "{#pageable.pageNumber, #pageable.pageSize, #pageable.sort, #categoryId, #search, #minPrice, #maxPrice, #animal, #brand, #isFeature, #isDelete}")
+        public Page<ProductResponse> getAllProduct(Pageable pageable, Integer categoryId, String search, Double minPrice, Double maxPrice, String animal, String brand, String isFeature, String isDelete) {
             Page<Products> productPage;
 
             // 1. Chuẩn hóa tham số
@@ -110,6 +110,7 @@ public class ProductServiceImpl implements ProductService {
                             hasCategory ? categoryId : null,
                             animal, // Thêm tham số animal
                             brand,
+                            isDelete,
                             isFeature,// Thêm tham số brand
                             hasSearch ? search.trim() : null,
                             finalMin, finalMax, unsortedPageable);
@@ -118,6 +119,7 @@ public class ProductServiceImpl implements ProductService {
                             hasCategory ? categoryId : null,
                             animal, // Thêm tham số animal
                             brand,
+                            isDelete,
                             isFeature,// Thêm tham số brand
                             hasSearch ? search.trim() : null,
                             finalMin, finalMax, unsortedPageable);
@@ -145,6 +147,7 @@ public class ProductServiceImpl implements ProductService {
                         hasCategory ? categoryId : null,
                         animal, // Thêm tham số animal
                         brand,
+                        isDelete,
                         isFeature,// Thêm tham số brand
                         hasSearch ? search.trim() : null,
                         finalMin, finalMax, dbPageable);

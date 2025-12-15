@@ -27,6 +27,7 @@ public interface ProductRepository extends JpaRepository<Products,Integer>, JpaS
             "WHERE (:categoryId IS NULL OR p.category_id = :categoryId) " +
             "AND (:animal IS NULL OR p.animal = :animal) " + // Thêm lọc animal
             "AND (:brand IS NULL OR p.brand = :brand) " +
+            "AND (:is_deleted IS NULL OR p.is_deleted = :is_deleted) " +
             "AND (:is_featured IS NULL OR p.is_featured = :is_featured)" +// Thêm lọc brand
             "AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
             "AND (:minPrice IS NULL OR v.price >= :minPrice) " +
@@ -36,6 +37,7 @@ public interface ProductRepository extends JpaRepository<Products,Integer>, JpaS
                     "WHERE (:categoryId IS NULL OR p.category_id = :categoryId) " +
                     "AND (:animal IS NULL OR p.animal = :animal) " + // Thêm lọc animal
                     "AND (:brand IS NULL OR p.brand = :brand) " +
+                    "AND (:is_deleted IS NULL OR p.is_deleted = :is_deleted) " +
                     "AND (:is_featured IS NULL OR p.is_featured = :is_featured)" +// Thêm lọc brand
                     "AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
                     "AND (:minPrice IS NULL OR v.price >= :minPrice) " +
@@ -45,6 +47,7 @@ public interface ProductRepository extends JpaRepository<Products,Integer>, JpaS
             @Param("categoryId") Integer categoryId,
             @Param("animal") String animal, // Thêm tham số
             @Param("brand") String brand,
+            @Param("is_deleted") String isDelete,
             @Param("is_featured") String isFeature,// Thêm tham số
             @Param("name") String name,
             @Param("minPrice") Double minPrice,
@@ -58,6 +61,7 @@ public interface ProductRepository extends JpaRepository<Products,Integer>, JpaS
             "WHERE (:categoryId IS NULL OR p.category_id = :categoryId) " +
             "AND (:animal IS NULL OR p.animal = :animal) " +
             "AND (:brand IS NULL OR p.brand = :brand) " +
+            "AND (:is_deleted IS NULL OR p.is_deleted = :is_deleted) " +
             "AND (:is_featured IS NULL OR p.is_featured = :is_featured)" +
             "AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
             "AND (:minPrice IS NULL OR v.price >= :minPrice) " +
@@ -69,6 +73,7 @@ public interface ProductRepository extends JpaRepository<Products,Integer>, JpaS
                     "WHERE (:categoryId IS NULL OR p.category_id = :categoryId) " +
                     "AND (:animal IS NULL OR p.animal = :animal) " +
                     "AND (:brand IS NULL OR p.brand = :brand) " +
+                    "AND (:is_deleted IS NULL OR p.is_deleted = :is_deleted) " +
                     "AND (:is_featured IS NULL OR p.is_featured = :is_featured)" +
                     "AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
                     "AND (:minPrice IS NULL OR v.price >= :minPrice) " +
@@ -78,6 +83,7 @@ public interface ProductRepository extends JpaRepository<Products,Integer>, JpaS
             @Param("categoryId") Integer categoryId,
             @Param("animal") String animal,
             @Param("brand") String brand,
+            @Param("is_deleted") String isDelete,
             @Param("is_featured") String isFeature,
             @Param("name") String name,
             @Param("minPrice") Double minPrice,
@@ -91,6 +97,7 @@ public interface ProductRepository extends JpaRepository<Products,Integer>, JpaS
             "WHERE (:categoryId IS NULL OR p.category_id = :categoryId) " +
             "AND (:animal IS NULL OR p.animal = :animal) " +
             "AND (:brand IS NULL OR p.brand = :brand) " +
+            "AND (:is_deleted IS NULL OR p.is_deleted = :is_deleted) " +
             "AND (:is_featured IS NULL OR p.is_featured = :is_featured)" +
             "AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
             "AND (:minPrice IS NULL OR v.price >= :minPrice) " +
@@ -102,6 +109,7 @@ public interface ProductRepository extends JpaRepository<Products,Integer>, JpaS
                     "WHERE (:categoryId IS NULL OR p.category_id = :categoryId) " +
                     "AND (:animal IS NULL OR p.animal = :animal) " +
                     "AND (:brand IS NULL OR p.brand = :brand) " +
+                    "AND (:is_deleted IS NULL OR p.is_deleted = :is_deleted) " +
                     "AND (:is_featured IS NULL OR p.is_featured = :is_featured)" +
                     "AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
                     "AND (:minPrice IS NULL OR v.price >= :minPrice) " +
@@ -111,6 +119,7 @@ public interface ProductRepository extends JpaRepository<Products,Integer>, JpaS
             @Param("categoryId") Integer categoryId,
             @Param("animal") String animal,
             @Param("brand") String brand,
+            @Param("is_deleted") String isDelete,
             @Param("is_featured") String isFeature,
             @Param("name") String name,
             @Param("minPrice") Double minPrice,
@@ -123,7 +132,7 @@ public interface ProductRepository extends JpaRepository<Products,Integer>, JpaS
             COUNT(p.brand)
         )
         FROM Products p
-        WHERE p.brand IS NOT NULL
+        WHERE p.brand IS NOT NULL AND p.isDeleted = '0'
         GROUP BY p.brand
     """)
     List<BrandResponse> getBrand();

@@ -21,6 +21,8 @@ public class OrderRequest {
 
     Float discountPercent;
 
+    String paymentMethod;
+
     String shippingAddress;
 
     String note;

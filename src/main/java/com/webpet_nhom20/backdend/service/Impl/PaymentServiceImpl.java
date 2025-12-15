@@ -2,11 +2,18 @@ package com.webpet_nhom20.backdend.service.Impl;
 
 import com.webpet_nhom20.backdend.config.VnPayConfig;
 import com.webpet_nhom20.backdend.dto.response.Payment.PaymentResponseDTO;
+import com.webpet_nhom20.backdend.entity.Order;
+import com.webpet_nhom20.backdend.exception.AppException;
+import com.webpet_nhom20.backdend.exception.ErrorCode;
+import com.webpet_nhom20.backdend.repository.OrderRepository;
 import com.webpet_nhom20.backdend.service.PaymentService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -14,27 +21,35 @@ import java.util.*;
 
 @Service
 public class PaymentServiceImpl implements PaymentService {
+    @Autowired
+    private OrderRepository orderRepository;
+
 
     @Override
-    public PaymentResponseDTO createPayment(HttpServletRequest req,long amount,String bankCode) throws UnsupportedEncodingException {
+    public PaymentResponseDTO createPayment(Integer orderId,HttpServletRequest httpReq) throws UnsupportedEncodingException {
+
+
+        Order order = orderRepository.findById(orderId).orElseThrow(()-> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
         String orderType = "other";
-        String vnp_TxnRef = VnPayConfig.getRandomNumber(8);
+        String vnp_TxnRef = order.getOrderCode();
         String vnp_TmnCode = VnPayConfig.vnp_TmnCode;
-
         Map<String, String> vnp_Params = new HashMap<>();
         vnp_Params.put("vnp_Version", VnPayConfig.vnp_Version);
         vnp_Params.put("vnp_Command", VnPayConfig.vnp_Command);
         vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
-        vnp_Params.put("vnp_Amount", String.valueOf(amount));
+        BigDecimal amount = order.getFinalAmount()
+                .multiply(BigDecimal.valueOf(100))
+                .setScale(0, RoundingMode.HALF_UP);
+        vnp_Params.put("vnp_Amount", amount.toPlainString());
         vnp_Params.put("vnp_CurrCode", "VND");
-        vnp_Params.put("vnp_BankCode", bankCode);
+        vnp_Params.put("vnp_BankCode", "NCB");
         vnp_Params.put("vnp_OrderType", orderType);
         vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
         vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang:" + vnp_TxnRef);
         vnp_Params.put("vnp_Locale", "vn");
         vnp_Params.put("vnp_ReturnUrl", VnPayConfig.vnp_ReturnUrl);
-        vnp_Params.put("vnp_IpAddr", VnPayConfig.getIpAddress(req));
+        vnp_Params.put("vnp_IpAddr", VnPayConfig.getIpAddress(httpReq));
 
 
 

@@ -48,6 +48,13 @@ public class Order {
     @Column(name = "shipping_amount" , nullable = false)
     BigDecimal shippingAmount;
 
+    @Column(
+            name = "final_amount",
+            insertable = false,
+            updatable = false
+    )
+    BigDecimal finalAmount;
+
     @Column(name = "discount_amount" )
     Float discountPercent;
 

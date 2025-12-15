@@ -21,14 +21,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.security.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,22 +58,6 @@ public class OrderServiceImpl implements OrderService {
 
         BigDecimal itemsTotal = BigDecimal.ZERO;
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
-        }
-
-        Jwt jwt =(Jwt)  authentication.getPrincipal();
-
-
-        Number userIdClaim = jwt.getClaim("id");
-        Integer userIdFromToken =userIdClaim.intValue();
-
-
-
-        // ================== 1. TÍNH TỔNG TIỀN ITEMS ==================
         for (OrderItemRequest itemReq : request.getItems()) {
 
             ProductVariants variant = productVariantRepository.findById(itemReq.getProductVariantId())
@@ -104,7 +92,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = new Order();
 
         User user = new User();
-        user.setId(userIdFromToken);
+        user.setId(userIdFromToken());
 
         order.setUser(user);
         order.setOrderCode(orderCode);
@@ -112,7 +100,12 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalAmount(totalAmount);         // ✅ BigDecimal
         order.setShippingAmount(shippingAmount);   // ✅ BigDecimal
         order.setDiscountPercent(discountPercent); // ✅ vẫn FLOAT
-        order.setStatus(OrderStatus.WAITING_PAYMENT.name());
+        if(request.getPaymentMethod().equals("cod")){
+            order.setStatus(OrderStatus.PROCESSING.name());
+        }
+        if(request.getPaymentMethod().equals("vnpay")){
+            order.setStatus(OrderStatus.WAITING_PAYMENT.name());
+        }
         order.setShippingAddress(request.getShippingAddress());
         order.setIsDeleted("0");
         order.setNote(request.getNote());
@@ -181,5 +174,62 @@ public class OrderServiceImpl implements OrderService {
 
         return response;
     }
+
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @Override
+    public Page<OrderResponse> getAllOrder(Pageable pageable) {
+        Page<Order> orderPage = orderRepository.findAllByUserId(userIdFromToken(),pageable);
+        return orderPage.map(order -> {
+                    OrderResponse response = new OrderResponse();
+                    response.setOrderCode(order.getOrderCode());
+                    response.setUserId(order.getUser().getId());
+                    response.setTotalAmount(order.getTotalAmount());
+                    response.setTotalAmount(order.getTotalAmount());
+                    response.setShippingAmount(order.getShippingAmount());
+                    response.setShippingAddress(order.getShippingAddress());
+                    response.setNote(order.getNote());
+                    response.setStatus(order.getStatus());
+                    response.setCreatedDate(order.getCreatedDate());
+                    return response;
+
+                });
+    }
+
+    @Transactional
+    public void markPaid(String orderCode) {
+        Order order = orderRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+
+        if (order.getStatus().equals(OrderStatus.PROCESSING.name())) return;
+
+        order.setStatus(OrderStatus.PROCESSING.name());
+        orderRepository.save(order);
+    }
+    @Transactional
+    public void markFailed(String orderCode) {
+        Order order = orderRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+
+        order.setStatus(OrderStatus.WAITING_PAYMENT.name());
+        orderRepository.save(order);
+    }
+
+    private Integer userIdFromToken(){
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        Jwt jwt =(Jwt)  authentication.getPrincipal();
+
+
+        Number userIdClaim = jwt.getClaim("id");
+        Integer userIdFromToken =userIdClaim.intValue();
+        return userIdFromToken;
+    }
+
+
 
 }

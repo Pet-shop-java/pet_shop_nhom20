@@ -42,12 +42,14 @@ public class SecurityConfig {
             "/api/v1/auth/introspect",
             "/api/v1/auth/refresh-token",
             "/api/v1/auth/logout"
+
     };
     private final String[] PUBLIC_GET_ENDPOINTS = {
             "/api/v1/categories/**",
             "/api/v1/services/active",
             "/api/v1/products/**",
-            "api/v1/payment/create-payment"
+            "api/v1/payment/create-payment",
+            "/api/v1/payment/vnpay/return"
     };
 
     @Value("${signerKey}")

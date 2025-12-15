@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -32,7 +33,7 @@ public class VnPayConfig {
     private String vnpCommand;
 
     public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    public static String vnp_ReturnUrl = "http://localhost:8080/vnpay_jsp/vnpay_return.jsp";
+    public static String vnp_ReturnUrl = "http://localhost:8080/api/v1/payment/vnpay/return";
 
     public static String vnp_TmnCode ;
     public static String secretKey ;
@@ -151,4 +152,52 @@ public class VnPayConfig {
         }
         return sb.toString();
     }
+
+    public static boolean verify(HttpServletRequest request) {
+        try {
+            Map<String, String> fields = new HashMap<>();
+
+            Enumeration<String> params = request.getParameterNames();
+            while (params.hasMoreElements()) {
+                String fieldName = params.nextElement();
+                String fieldValue = request.getParameter(fieldName);
+
+                if (fieldValue != null && fieldValue.length() > 0) {
+                    fields.put(fieldName, fieldValue);
+                }
+            }
+
+            // ❌ REMOVE HASH PARAMS
+            String vnpSecureHash = fields.remove("vnp_SecureHash");
+            fields.remove("vnp_SecureHashType");
+
+            // ✅ SORT
+            List<String> fieldNames = new ArrayList<>(fields.keySet());
+            Collections.sort(fieldNames);
+
+            StringBuilder hashData = new StringBuilder();
+            for (int i = 0; i < fieldNames.size(); i++) {
+                String key = fieldNames.get(i);
+                String value = fields.get(key);
+
+                hashData.append(key)
+                        .append("=")
+                        .append(URLEncoder.encode(value, StandardCharsets.US_ASCII.toString()));
+
+                if (i < fieldNames.size() - 1) {
+                    hashData.append("&");
+                }
+            }
+
+            String calculatedHash =
+                    VnPayConfig.hmacSHA512(VnPayConfig.secretKey, hashData.toString());
+
+            return calculatedHash.equalsIgnoreCase(vnpSecureHash);
+
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+
 }

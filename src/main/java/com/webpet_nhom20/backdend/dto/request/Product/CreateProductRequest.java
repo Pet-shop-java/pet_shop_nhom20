@@ -37,4 +37,6 @@ public class CreateProductRequest {
      * Mô tả chi tiết về sản phẩm (tùy chọn)
      */
     String description;
+    String animal;
+    String brand;
 }

@@ -16,7 +16,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProductResponse {
     int id;
     int categoryId;
@@ -24,6 +23,8 @@ public class ProductResponse {
     String name;
     String shortDescription;
     String description;
+    String animal;
+    String brand;
     String stockQuantity;
     String soldQuantity;
     String isDeleted;

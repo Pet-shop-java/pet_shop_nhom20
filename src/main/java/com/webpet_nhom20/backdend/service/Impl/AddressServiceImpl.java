@@ -51,9 +51,6 @@ public class AddressServiceImpl implements AddressService {
 
         Page<Addresses> addressPage = addressRepository.findAllByUserIdAndIsDeleted(userIdFromToken, "0", sortedPageable);
 
-        if (addressPage.isEmpty()){
-            throw new AppException(ErrorCode.IS_EMPTY);
-        }
 
         Page<AddressResponse> responsePage = addressPage.map(addressMapper::toResponse);
 

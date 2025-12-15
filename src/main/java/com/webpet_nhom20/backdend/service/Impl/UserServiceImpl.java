@@ -4,9 +4,11 @@ import com.webpet_nhom20.backdend.dto.request.User.ChangePasswordUserRequest;
 import com.webpet_nhom20.backdend.dto.request.User.UserCreationRequest;
 import com.webpet_nhom20.backdend.dto.request.User.UserUpdateRequest;
 import com.webpet_nhom20.backdend.dto.response.User.UserResponse;
+import com.webpet_nhom20.backdend.entity.Cart;
 import com.webpet_nhom20.backdend.entity.User;
 import com.webpet_nhom20.backdend.exception.AppException;
 import com.webpet_nhom20.backdend.exception.ErrorCode;
+import com.webpet_nhom20.backdend.repository.CartRepository;
 import com.webpet_nhom20.backdend.repository.RoleRepository;
 import com.webpet_nhom20.backdend.repository.UserRepository;
 import com.webpet_nhom20.backdend.service.UserService;
@@ -36,6 +38,8 @@ public class UserServiceImpl implements UserService {
     private UserMapper userMapper;
 
     @Autowired
+    private CartRepository cartRepository;
+    @Autowired
     PasswordEncoder passwordEncoder;
 
     public UserResponse createUser(UserCreationRequest request){
@@ -53,8 +57,13 @@ public class UserServiceImpl implements UserService {
         user.setIsDeleted("0");
         var roleCustomer = roleRepository.findById("CUSTOMER").orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
         user.setRole(roleCustomer);
+        User savedUser = userRepository.save(user);
 
-        return userMapper.toUserResponse(userRepository.save(user));
+        Cart cart = new Cart();
+        cart.setUser(savedUser);
+        cartRepository.save(cart);
+
+        return userMapper.toUserResponse(userRepository.save(savedUser));
     }
 
     @Override

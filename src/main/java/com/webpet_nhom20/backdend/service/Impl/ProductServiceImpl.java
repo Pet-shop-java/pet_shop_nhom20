@@ -178,6 +178,8 @@ public class ProductServiceImpl implements ProductService {
                 .category(categories)
                 .description(request.getDescription())
                 .shortDescription(request.getShortDescription())
+                .animal(request.getAnimal())
+                .brand(request.getBrand())
                 .isDeleted("0")
                 .isFeatured(request.isFeatured() ? "1" : "0")
                 .build();
@@ -247,6 +249,8 @@ public class ProductServiceImpl implements ProductService {
                 .categoryId(product.getCategory().getId())
                 .categoryName(product.getCategory().getName())
                 .name(product.getName())
+                .animal(product.getAnimal())
+                .brand(product.getBrand())
                 .shortDescription(product.getShortDescription())
                 .description(product.getDescription())
                 .soldQuantity(String.valueOf(product.getSoldQuantity()))

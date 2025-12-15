@@ -60,32 +60,29 @@ public class JwtTokenProvider {
      * @return User ID dưới dạng Integer
      */
     public Integer getUserId(String token) {
+
+        JWTClaimsSet claims = getClaimsFromToken(token);
+
+        Object idClaim = claims.getClaim("id");
+
+        if (idClaim == null) {
+            log.error("JWT token does not contain 'id' claim");
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
         try {
-            JWTClaimsSet claims = getClaimsFromToken(token);
-            Object idClaim = claims.getClaim("id");
-            
-            if (idClaim instanceof Integer) {
-                return (Integer) idClaim;
-            } else if (idClaim instanceof String) {
-                return Integer.parseInt((String) idClaim);
-            } else if (idClaim instanceof Long) {
-                return ((Long) idClaim).intValue();
+            if (idClaim instanceof Number) {
+                return ((Number) idClaim).intValue();
             }
-            
-            // Nếu không có claim "id", thử lấy từ subject (username)
-            String subject = claims.getSubject();
-            if (subject != null) {
-                // Có thể cần query database để lấy ID từ username
-                log.warn("No 'id' claim found in token, subject: {}", subject);
-            }
-            
-            return null;
-            
-        } catch (Exception e) {
-            log.error("Error extracting user ID from token: {}", e.getMessage());
-            return null;
+
+            return Integer.parseInt(idClaim.toString());
+
+        } catch (NumberFormatException e) {
+            log.error("Invalid 'id' claim type in JWT: {}", idClaim);
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
     }
+
 
     /**
      * Lấy User Role từ JWT token

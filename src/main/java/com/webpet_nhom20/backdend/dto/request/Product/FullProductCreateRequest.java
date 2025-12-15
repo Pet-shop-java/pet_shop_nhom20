@@ -15,6 +15,8 @@ public class FullProductCreateRequest {
     private Integer categoryId;
     private String shortDescription;
     private String description;
+    private String animal;
+    private String brand;
     private boolean isFeatured;
 
     @Valid // Kích hoạt validation cho các đối tượng bên trong List

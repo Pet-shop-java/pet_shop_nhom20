@@ -34,6 +34,7 @@ public class VnPayConfig {
 
     public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
     public static String vnp_ReturnUrl = "http://localhost:8080/api/v1/payment/vnpay/return";
+    public static String vnp_IpnUrl = "https://kason-diligent-nonenigmatically.ngrok-free.dev/api/v1/payment/vnpay/ipn";
 
     public static String vnp_TmnCode ;
     public static String secretKey ;

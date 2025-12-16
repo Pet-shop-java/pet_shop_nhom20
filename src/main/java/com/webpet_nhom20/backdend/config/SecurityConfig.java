@@ -41,7 +41,9 @@ public class SecurityConfig {
             "/api/v1/auth/login",
             "/api/v1/auth/introspect",
             "/api/v1/auth/refresh-token",
-            "/api/v1/auth/logout"
+            "/api/v1/auth/logout",
+            "/api/v1/payment/vnpay/ipn"
+
 
     };
     private final String[] PUBLIC_GET_ENDPOINTS = {
@@ -50,6 +52,7 @@ public class SecurityConfig {
             "/api/v1/products/**",
             "api/v1/payment/create-payment",
             "/api/v1/payment/vnpay/return"
+
     };
 
     @Value("${signerKey}")

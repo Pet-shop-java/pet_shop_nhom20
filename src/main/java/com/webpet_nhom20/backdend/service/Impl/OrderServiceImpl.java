@@ -11,6 +11,7 @@ import com.webpet_nhom20.backdend.entity.OrderItems;
 import com.webpet_nhom20.backdend.entity.ProductVariants;
 import com.webpet_nhom20.backdend.entity.User;
 import com.webpet_nhom20.backdend.enums.OrderStatus;
+import com.webpet_nhom20.backdend.enums.PaymentMethod;
 import com.webpet_nhom20.backdend.exception.AppException;
 import com.webpet_nhom20.backdend.exception.ErrorCode;
 import com.webpet_nhom20.backdend.repository.OrderItemRepository;
@@ -102,13 +103,19 @@ public class OrderServiceImpl implements OrderService {
         order.setDiscountPercent(discountPercent); // ✅ vẫn FLOAT
         if(request.getPaymentMethod().equals("cod")){
             order.setStatus(OrderStatus.PROCESSING.name());
+            order.setPaymentMethod(PaymentMethod.COD.name());
         }
         if(request.getPaymentMethod().equals("vnpay")){
             order.setStatus(OrderStatus.WAITING_PAYMENT.name());
+            order.setPaymentMethod(PaymentMethod.VNPAY.name());
+            LocalDateTime now = LocalDateTime.now();
+            order.setPaymentExpiredAt(now.plusDays(1));
         }
         order.setShippingAddress(request.getShippingAddress());
         order.setIsDeleted("0");
         order.setNote(request.getNote());
+
+
 
         Order savedOrder = orderRepository.save(order);
 
@@ -179,8 +186,10 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Page<OrderResponse> getAllOrder(Pageable pageable) {
         Page<Order> orderPage = orderRepository.findAllByUserId(userIdFromToken(),pageable);
+
         return orderPage.map(order -> {
                     OrderResponse response = new OrderResponse();
+                    expireIfNeeded(order);
                     response.setOrderCode(order.getOrderCode());
                     response.setUserId(order.getUser().getId());
                     response.setTotalAmount(order.getTotalAmount());
@@ -195,24 +204,24 @@ public class OrderServiceImpl implements OrderService {
                 });
     }
 
-    @Transactional
-    public void markPaid(String orderCode) {
-        Order order = orderRepository.findByOrderCode(orderCode)
-                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-
-        if (order.getStatus().equals(OrderStatus.PROCESSING.name())) return;
-
-        order.setStatus(OrderStatus.PROCESSING.name());
-        orderRepository.save(order);
-    }
-    @Transactional
-    public void markFailed(String orderCode) {
-        Order order = orderRepository.findByOrderCode(orderCode)
-                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-
-        order.setStatus(OrderStatus.WAITING_PAYMENT.name());
-        orderRepository.save(order);
-    }
+//    @Transactional
+//    public void markPaid(String orderCode) {
+//        Order order = orderRepository.findByOrderCode(orderCode)
+//                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+//
+//        if (order.getStatus().equals(OrderStatus.PROCESSING.name())) return;
+//
+//        order.setStatus(OrderStatus.PROCESSING.name());
+//        orderRepository.save(order);
+//    }
+//    @Transactional
+//    public void markFailed(String orderCode) {
+//        Order order = orderRepository.findByOrderCode(orderCode)
+//                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+//
+//        order.setStatus(OrderStatus.WAITING_PAYMENT.name());
+//        orderRepository.save(order);
+//    }
 
     private Integer userIdFromToken(){
         Authentication authentication =
@@ -230,6 +239,20 @@ public class OrderServiceImpl implements OrderService {
         return userIdFromToken;
     }
 
+    private void expireIfNeeded(Order order) {
+        if (!OrderStatus.WAITING_PAYMENT.name().equals(order.getStatus())) {
+            return;
+        }
+
+        if (order.getPaymentExpiredAt() == null) {
+            return;
+        }
+
+        if (order.getPaymentExpiredAt().isBefore(LocalDateTime.now())) {
+            order.setStatus(OrderStatus.CANCELLED.name());
+            orderRepository.save(order);
+        }
+    }
 
 
 }

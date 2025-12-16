@@ -45,20 +45,24 @@ public class PaymentController {
 
 
     @GetMapping("/vnpay/return")
-    public void vnpayReturn(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void vnpayReturn(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
         boolean valid = VnPayConfig.verify(request);
+
+        if (!valid) {
+            response.sendRedirect("http://localhost:3000/payment-failed?reason=invalid-signature");
+            return;
+        }
 
         String responseCode = request.getParameter("vnp_ResponseCode");
         String orderCode = request.getParameter("vnp_TxnRef");
 
-        if (valid && "00".equals(responseCode)) {
-            orderService.markPaid(orderCode);
-            response.sendRedirect("http://localhost:3000/payment-success");
+        if ("00".equals(responseCode)) {
+            paymentService.handleVnPaySuccess(request);
+            response.sendRedirect("http://localhost:3000/payment-success?order=" + orderCode);
         } else {
-            orderService.markFailed(orderCode);
-            response.sendRedirect("http://localhost:3000/payment-failed");
+            paymentService.handleVnPayFailed(request);
+            response.sendRedirect("http://localhost:3000/payment-failed?order=" + orderCode);
         }
     }
-
-
 }

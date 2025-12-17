@@ -86,6 +86,7 @@ public enum ErrorCode {
     VARIANT_PRICE_MUST_BE_POSITIVE_OR_ZERO(1611, "Giá phải là số dương hoặc bằng 0", HttpStatus.BAD_REQUEST),
     STOCK_QUANTITY_MUST_BE_POSITIVE_OR_ZERO(1612, "Số lượng tồn kho phải là số dương hoặc bằng 0", HttpStatus.BAD_REQUEST),
     IS_DELETED_INVALID(1613, "Giá trị isDeleted phải là 0 hoặc 1", HttpStatus.BAD_REQUEST),
+    STOCK_NOT_ENOUGHT(1614,"Số lượng hàng trong kho không đủ",HttpStatus.BAD_REQUEST),
 
     // ===== LỖI HÌNH ẢNH (1700-1799) =====
     IMAGE_NOT_FOUND(1700, "Hình ảnh không tồn tại", HttpStatus.NOT_FOUND),
@@ -149,7 +150,7 @@ public enum ErrorCode {
     CANNOT_CANCEL_COMPLETED_ORDER(2202,"Không thể hủy đơn hàng đã hoàn thành",HttpStatus.BAD_REQUEST),
     CANNOT_CANCEL_CANCELED_ORDER(2203,"Không thể hủy đơn hàng đã bị hủy",HttpStatus.BAD_REQUEST),
     PRODUCT_VARIANT_ID_IS_NOT_NULL(2204,"ID biến thể sản phẩm không được để trống",HttpStatus.BAD_REQUEST),
-
+    CANNOT_CANCEL_ORDER(2205,"Không thể hủy đơn hàng này",HttpStatus.BAD_REQUEST)
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

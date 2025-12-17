@@ -1,11 +1,14 @@
 package com.webpet_nhom20.backdend.dto.request.ServicePet;
 
+import com.webpet_nhom20.backdend.dto.request.BookingTime.BookingTimeRequest;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -50,4 +53,7 @@ public class CreateServicePetRequest {
      */
     @NotNull(message = "SERVICE_PET_PRICE_IS_NOT_NULL")
     BigDecimal price;
+
+    @NotEmpty(message = "BOOKING_TIME_IS_NOT_EMPTY")
+    List<BookingTimeRequest> bookingTimes;
 }

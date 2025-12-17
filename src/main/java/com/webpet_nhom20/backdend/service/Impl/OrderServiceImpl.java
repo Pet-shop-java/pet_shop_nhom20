@@ -71,7 +71,7 @@ public class OrderServiceImpl implements OrderService {
             itemsTotal = itemsTotal.add(totalItemPrice);
         }
 
-        // ================== 2. TÍNH GIẢM GIÁ (GIỮ discountPercent LÀ FLOAT) ==================
+
         float discountPercent = request.getDiscountPercent() == null
                 ? 0f
                 : (float) request.getDiscountPercent();

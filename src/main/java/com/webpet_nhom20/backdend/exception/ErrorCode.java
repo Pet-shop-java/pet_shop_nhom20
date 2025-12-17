@@ -86,7 +86,7 @@ public enum ErrorCode {
     VARIANT_PRICE_MUST_BE_POSITIVE_OR_ZERO(1611, "Giá phải là số dương hoặc bằng 0", HttpStatus.BAD_REQUEST),
     STOCK_QUANTITY_MUST_BE_POSITIVE_OR_ZERO(1612, "Số lượng tồn kho phải là số dương hoặc bằng 0", HttpStatus.BAD_REQUEST),
     IS_DELETED_INVALID(1613, "Giá trị isDeleted phải là 0 hoặc 1", HttpStatus.BAD_REQUEST),
-    STOCK_NOT_ENOUGHT(1614,"Số lượng hàng trong kho không đủ",HttpStatus.BAD_REQUEST),
+    STOCK_NOT_ENOUGHT(1614,"Số lượng hàng trong kho không đủ",HttpStatus.OK),
 
     // ===== LỖI HÌNH ẢNH (1700-1799) =====
     IMAGE_NOT_FOUND(1700, "Hình ảnh không tồn tại", HttpStatus.NOT_FOUND),

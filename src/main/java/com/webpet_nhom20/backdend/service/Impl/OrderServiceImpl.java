@@ -70,6 +70,8 @@ public class OrderServiceImpl implements OrderService {
 
             BigDecimal price = BigDecimal.valueOf(variant.getPrice()); // ✅ BigDecimal
             BigDecimal quantity = BigDecimal.valueOf(itemReq.getQuantity());
+            variant.setStockQuantity(variant.getStockQuantity() - itemReq.getQuantity());
+            variant.setSoldQuantity(variant.getSoldQuantity()+ itemReq.getQuantity());
 
             BigDecimal totalItemPrice = price.multiply(quantity); // price * quantity
             itemsTotal = itemsTotal.add(totalItemPrice);

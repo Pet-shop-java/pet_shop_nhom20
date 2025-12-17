@@ -13,7 +13,10 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -37,16 +40,27 @@ public class Order {
     @OneToMany(mappedBy = "order")
     private Set<OrderItems> orderItems;
 
-    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL)
-    private Payments payments;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Payment> payments = new ArrayList<>();
+
+    @Column(name = "payment_method",nullable =false )
+    private String paymentMethod;
 
     @Column(name = "total_amount" , nullable = false)
     BigDecimal totalAmount;
 
-
+    @Column(name = "payment_expired_at")
+    private LocalDateTime paymentExpiredAt;
 
     @Column(name = "shipping_amount" , nullable = false)
     BigDecimal shippingAmount;
+
+    @Column(
+            name = "final_amount",
+            insertable = false,
+            updatable = false
+    )
+    BigDecimal finalAmount;
 
     @Column(name = "discount_amount" )
     Float discountPercent;

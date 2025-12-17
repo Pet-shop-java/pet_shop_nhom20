@@ -3,6 +3,7 @@ package com.webpet_nhom20.backdend.controller;
 
 import com.webpet_nhom20.backdend.dto.request.Order.OrderRequest;
 import com.webpet_nhom20.backdend.dto.response.ApiResponse;
+import com.webpet_nhom20.backdend.dto.response.Order.OrderDetailResponse;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderResponse;
 import com.webpet_nhom20.backdend.enums.OrderStatus;
 import com.webpet_nhom20.backdend.service.OrderService;
@@ -18,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -63,13 +66,14 @@ public class OrderController {
                 .result(result)
                 .build();
     }
-    @GetMapping("detail/{orderId}")
-    public ApiResponse<OrderResponse> getOrderById(@PathVariable Integer id) {
-        OrderResponse orderResponse = orderService.findOrderItemsByOrderId(id);
-        return ApiResponse.<OrderResponse>builder()
+    @GetMapping("/detail/{id}")
+    public ApiResponse<List<OrderDetailResponse>> getOrderDetails(@PathVariable int id) {
+        List<OrderDetailResponse> result = orderService.getOrderDetails(id);
+
+        return ApiResponse.<List<OrderDetailResponse>>builder()
                 .success(true)
-                .message("Get order successfully")
-                .result(orderResponse)
+                .message("Lấy chi tiết đơn hàng thành công")
+                .result(result)
                 .build();
     }
 }

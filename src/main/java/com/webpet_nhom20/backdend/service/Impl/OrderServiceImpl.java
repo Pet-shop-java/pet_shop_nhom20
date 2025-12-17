@@ -4,6 +4,7 @@ import com.nimbusds.jwt.SignedJWT;
 import com.webpet_nhom20.backdend.config.JwtTokenProvider;
 import com.webpet_nhom20.backdend.dto.request.Order.OrderRequest;
 import com.webpet_nhom20.backdend.dto.request.OrderItem.OrderItemRequest;
+import com.webpet_nhom20.backdend.dto.response.Order.OrderDetailResponse;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderResponse;
 import com.webpet_nhom20.backdend.dto.response.OrderItem.OrderItemResponse;
 import com.webpet_nhom20.backdend.entity.Order;
@@ -17,6 +18,7 @@ import com.webpet_nhom20.backdend.exception.ErrorCode;
 import com.webpet_nhom20.backdend.repository.OrderItemRepository;
 import com.webpet_nhom20.backdend.repository.OrderRepository;
 import com.webpet_nhom20.backdend.repository.ProductVariantRepository;
+import com.webpet_nhom20.backdend.repository.projection.OrderDetailProjection;
 import com.webpet_nhom20.backdend.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -200,7 +203,7 @@ public class OrderServiceImpl implements OrderService {
         return orderPage.map(order -> {
             OrderResponse response = new OrderResponse();
             expireIfNeeded(order); // Logic kiểm tra hết hạn của bạn
-
+            response.setId(order.getId());
             response.setOrderCode(order.getOrderCode());
             response.setUserId(order.getUser().getId());
             response.setTotalAmount(order.getTotalAmount());
@@ -227,15 +230,34 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
         return "Hủy đơn hàng thành công";
     }
-    public OrderResponse findOrderItemsByOrderId(Integer orderId) {
-        Integer Id = userIdFromToken();
-        List<OrderItemResponse> order = orderItemRepository.findByOrderId(orderId);
+    public List<OrderDetailResponse> getOrderDetails(Integer orderId) {
+        // 1. Lấy dữ liệu thô từ SQL
+        List<OrderDetailProjection> projections = orderRepository.getOrderDetailsNative(orderId);
 
-        OrderResponse response = new OrderResponse();
-        response.setId(orderId);
-        response.setItems(order);
+        // 2. Map sang DTO Response
+        return projections.stream()
+                .map(p -> OrderDetailResponse.builder()
+                        .orderId(p.getOrderPrimaryId())
+                        .orderCode(p.getOrderCode())
+                        .status(p.getStatus())
+                        .totalAmount(p.getTotalAmount())
+                        .shippingAddress(p.getShippingAddress())
+                        .orderDate(p.getOrderDate())
 
-        return response;
+                        .orderItemId(p.getOrderItemId())
+                        .quantity(p.getQuantity())
+                        .unitPrice(p.getUnitPrice())
+                        .totalPrice(p.getTotalPrice())
+
+                        .productName(p.getProductName())
+
+                        .variantId(p.getVariantId())
+                        .variantPrice(p.getPrice())
+                        .stockQuantity(p.getStockQuantity())
+
+                        .imageUrl(p.getImageUrl())
+                        .build())
+                .collect(Collectors.toList());
     }
 
 

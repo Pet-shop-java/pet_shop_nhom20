@@ -149,7 +149,7 @@ public enum ErrorCode {
     CANNOT_CANCEL_COMPLETED_ORDER(2202,"Không thể hủy đơn hàng đã hoàn thành",HttpStatus.BAD_REQUEST),
     CANNOT_CANCEL_CANCELED_ORDER(2203,"Không thể hủy đơn hàng đã bị hủy",HttpStatus.BAD_REQUEST),
     PRODUCT_VARIANT_ID_IS_NOT_NULL(2204,"ID biến thể sản phẩm không được để trống",HttpStatus.BAD_REQUEST),
-
+    CANNOT_CANCEL_ORDER(2205,"Không thể hủy đơn hàng này",HttpStatus.BAD_REQUEST)
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

@@ -10,12 +10,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 public interface OrderService {
     public OrderResponse createOrder(OrderRequest request);
 
-    public Page<OrderResponse> getAllOrder(Pageable pageable);
-
-
+    public Page<OrderResponse> getAllOrder(String status, Pageable pageable);
+    public String cancelOrder(String orderCode) throws AppException;
+    OrderResponse findOrderItemsByOrderId(Integer orderId) throws AppException;
 //    @Transactional
 //    public void markPaid(String orderCode) ;
 //

@@ -36,6 +36,8 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -184,25 +186,59 @@ public class OrderServiceImpl implements OrderService {
 
     @PreAuthorize("hasRole('CUSTOMER')")
     @Override
-    public Page<OrderResponse> getAllOrder(Pageable pageable) {
-        Page<Order> orderPage = orderRepository.findAllByUserId(userIdFromToken(),pageable);
+    public Page<OrderResponse> getAllOrder(String status, Pageable pageable) {
+        Integer userId = userIdFromToken();
+        Page<Order> orderPage;
+
+        // Logic: Nếu có status thì lọc theo status, không thì lấy tất cả
+        if (status != null) {
+            orderPage = orderRepository.findAllByUserIdAndStatus(userId, status, pageable);
+        } else {
+            orderPage = orderRepository.findAllByUserId(userId, pageable);
+        }
 
         return orderPage.map(order -> {
-                    OrderResponse response = new OrderResponse();
-                    expireIfNeeded(order);
-                    response.setOrderCode(order.getOrderCode());
-                    response.setUserId(order.getUser().getId());
-                    response.setTotalAmount(order.getTotalAmount());
-                    response.setTotalAmount(order.getTotalAmount());
-                    response.setShippingAmount(order.getShippingAmount());
-                    response.setShippingAddress(order.getShippingAddress());
-                    response.setNote(order.getNote());
-                    response.setStatus(order.getStatus());
-                    response.setCreatedDate(order.getCreatedDate());
-                    return response;
+            OrderResponse response = new OrderResponse();
+            expireIfNeeded(order); // Logic kiểm tra hết hạn của bạn
 
-                });
+            response.setOrderCode(order.getOrderCode());
+            response.setUserId(order.getUser().getId());
+            response.setTotalAmount(order.getTotalAmount());
+            response.setShippingAmount(order.getShippingAmount());
+            response.setShippingAddress(order.getShippingAddress());
+            response.setNote(order.getNote());
+            response.setStatus(order.getStatus());
+            response.setCreatedDate(order.getCreatedDate());
+
+            return response;
+        });
     }
+    public String cancelOrder(String orderCode) throws AppException {
+        Order order = orderRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        boolean isCancelable = order.getStatus().equals(OrderStatus.WAITING_PAYMENT.name())
+                || order.getStatus().equals(OrderStatus.PROCESSING.name());
+
+        if (!isCancelable) {
+            throw new AppException(ErrorCode.CANNOT_CANCEL_ORDER);
+        }
+
+        order.setStatus(OrderStatus.CANCELLED.name());
+        orderRepository.save(order);
+        return "Hủy đơn hàng thành công";
+    }
+    public OrderResponse findOrderItemsByOrderId(Integer orderId) {
+        Integer Id = userIdFromToken();
+        List<OrderItemResponse> order = orderItemRepository.findByOrderId(orderId);
+
+        OrderResponse response = new OrderResponse();
+        response.setId(orderId);
+        response.setItems(order);
+
+        return response;
+    }
+
+
 
 //    @Transactional
 //    public void markPaid(String orderCode) {

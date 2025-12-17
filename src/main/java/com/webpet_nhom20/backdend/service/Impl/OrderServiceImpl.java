@@ -2,6 +2,7 @@ package com.webpet_nhom20.backdend.service.Impl;
 
 import com.nimbusds.jwt.SignedJWT;
 import com.webpet_nhom20.backdend.config.JwtTokenProvider;
+import com.webpet_nhom20.backdend.dto.request.Order.CheckStockRequest;
 import com.webpet_nhom20.backdend.dto.request.Order.OrderRequest;
 import com.webpet_nhom20.backdend.dto.request.OrderItem.OrderItemRequest;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderResponse;
@@ -57,6 +58,7 @@ public class OrderServiceImpl implements OrderService {
     private ProductVariantRepository productVariantRepository;
     @Override
     @PreAuthorize("hasRole('CUSTOMER')")
+
     public OrderResponse createOrder(OrderRequest request) {
 
         BigDecimal itemsTotal = BigDecimal.ZERO;
@@ -68,6 +70,8 @@ public class OrderServiceImpl implements OrderService {
 
             BigDecimal price = BigDecimal.valueOf(variant.getPrice()); // ✅ BigDecimal
             BigDecimal quantity = BigDecimal.valueOf(itemReq.getQuantity());
+            variant.setStockQuantity(variant.getStockQuantity() - itemReq.getQuantity());
+            variant.setSoldQuantity(variant.getSoldQuantity()+ itemReq.getQuantity());
 
             BigDecimal totalItemPrice = price.multiply(quantity); // price * quantity
             itemsTotal = itemsTotal.add(totalItemPrice);
@@ -238,6 +242,17 @@ public class OrderServiceImpl implements OrderService {
         return response;
     }
 
+    @Override
+    public void checkStock(CheckStockRequest request) {
+        for(var item : request.getItems()) {
+            ProductVariants variants =
+                    productVariantRepository.findById(item.getProductVariantId()).orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+            if(variants.getStockQuantity() < item.getQuantity()) {
+                throw new AppException(ErrorCode.STOCK_NOT_ENOUGHT);
+            }
+        }
+
+    }
 
 
 //    @Transactional

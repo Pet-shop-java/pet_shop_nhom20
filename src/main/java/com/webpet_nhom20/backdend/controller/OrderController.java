@@ -1,6 +1,7 @@
 package com.webpet_nhom20.backdend.controller;
 
 
+import com.webpet_nhom20.backdend.dto.request.Order.CheckStockRequest;
 import com.webpet_nhom20.backdend.dto.request.Order.OrderRequest;
 import com.webpet_nhom20.backdend.dto.response.ApiResponse;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderResponse;
@@ -63,6 +64,14 @@ public class OrderController {
                 .result(result)
                 .build();
     }
+    @PostMapping("/check-stock")
+    public ApiResponse<Void> checkStock(@RequestBody CheckStockRequest request){
+        orderService.checkStock(request);
+        return ApiResponse.<Void>builder()
+                .success(true)
+                .message("")
+                .build();
+    }
     @GetMapping("detail/{orderId}")
     public ApiResponse<OrderResponse> getOrderById(@PathVariable Integer id) {
         OrderResponse orderResponse = orderService.findOrderItemsByOrderId(id);
@@ -72,4 +81,8 @@ public class OrderController {
                 .result(orderResponse)
                 .build();
     }
+
+
+
+
 }

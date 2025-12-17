@@ -1,5 +1,6 @@
 package com.webpet_nhom20.backdend.service;
 
+import com.webpet_nhom20.backdend.dto.request.Order.CheckStockRequest;
 import com.webpet_nhom20.backdend.dto.request.Order.OrderRequest;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderResponse;
 import com.webpet_nhom20.backdend.entity.Order;
@@ -18,6 +19,7 @@ public interface OrderService {
     public Page<OrderResponse> getAllOrder(String status, Pageable pageable);
     public String cancelOrder(String orderCode) throws AppException;
     OrderResponse findOrderItemsByOrderId(Integer orderId) throws AppException;
+    public void checkStock(CheckStockRequest request) ;
 //    @Transactional
 //    public void markPaid(String orderCode) ;
 //

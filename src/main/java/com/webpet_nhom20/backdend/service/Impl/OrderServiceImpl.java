@@ -35,10 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -59,25 +56,45 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @PreAuthorize("hasRole('CUSTOMER')")
 
+    @Transactional
     public OrderResponse createOrder(OrderRequest request) {
 
         BigDecimal itemsTotal = BigDecimal.ZERO;
+        Map<Integer, ProductVariants> variantMap = new HashMap<>();
 
+        // ================== 1. CHECK STOCK + TRỪ KHO ==================
         for (OrderItemRequest itemReq : request.getItems()) {
 
-            ProductVariants variant = productVariantRepository.findById(itemReq.getProductVariantId())
+            ProductVariants variant = productVariantRepository
+                    .findByIdForUpdate((long) itemReq.getProductVariantId())
                     .orElseThrow(() -> new RuntimeException("Product variant not found"));
 
-            BigDecimal price = BigDecimal.valueOf(variant.getPrice()); // ✅ BigDecimal
-            BigDecimal quantity = BigDecimal.valueOf(itemReq.getQuantity());
-            variant.setStockQuantity(variant.getStockQuantity() - itemReq.getQuantity());
-            variant.setSoldQuantity(variant.getSoldQuantity()+ itemReq.getQuantity());
 
-            BigDecimal totalItemPrice = price.multiply(quantity); // price * quantity
-            itemsTotal = itemsTotal.add(totalItemPrice);
+            if (variant.getStockQuantity() < itemReq.getQuantity()) {
+                throw new RuntimeException(
+                        "Sản phẩm " + variant.getVariantName()
+                                + " chỉ còn " + variant.getStockQuantity()
+                );
+            }
+
+
+            variant.setStockQuantity(
+                    variant.getStockQuantity() - itemReq.getQuantity()
+            );
+            variant.setSoldQuantity(
+                    variant.getSoldQuantity() + itemReq.getQuantity()
+            );
+
+            productVariantRepository.save(variant);
+            variantMap.put(variant.getId(), variant);
+
+            // 💰 TÍNH TIỀN
+            BigDecimal price = BigDecimal.valueOf(variant.getPrice());
+            BigDecimal quantity = BigDecimal.valueOf(itemReq.getQuantity());
+            itemsTotal = itemsTotal.add(price.multiply(quantity));
         }
 
-
+        // ================== 2. DISCOUNT ==================
         float discountPercent = request.getDiscountPercent() == null
                 ? 0f
                 : (float) request.getDiscountPercent();
@@ -86,77 +103,65 @@ public class OrderServiceImpl implements OrderService {
                 .multiply(BigDecimal.valueOf(discountPercent))
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
-        // ================== 3. TÍNH TỔNG TIỀN ĐƠN ==================
-        BigDecimal shippingAmount = request.getShippingAmount(); // ✅ BigDecimal
-
+        // ================== 3. TOTAL ==================
+        BigDecimal shippingAmount = request.getShippingAmount();
         BigDecimal totalAmount = itemsTotal
                 .add(shippingAmount)
                 .subtract(discountValue);
 
-        // ================== 4. TẠO ORDER ==================
-        String orderCode = "ORD-" + System.currentTimeMillis();
-
+        // ================== 4. CREATE ORDER ==================
         Order order = new Order();
-
         User user = new User();
         user.setId(userIdFromToken());
 
         order.setUser(user);
-        order.setOrderCode(orderCode);
+        order.setOrderCode("ORD-" + System.currentTimeMillis());
+        order.setTotalAmount(totalAmount);
+        order.setShippingAmount(shippingAmount);
+        order.setDiscountPercent(discountPercent);
+        order.setShippingAddress(request.getShippingAddress());
+        order.setNote(request.getNote());
+        order.setIsDeleted("0");
 
-        order.setTotalAmount(totalAmount);         // ✅ BigDecimal
-        order.setShippingAmount(shippingAmount);   // ✅ BigDecimal
-        order.setDiscountPercent(discountPercent); // ✅ vẫn FLOAT
-        if(request.getPaymentMethod().equals("cod")){
+        if ("cod".equals(request.getPaymentMethod())) {
             order.setStatus(OrderStatus.PROCESSING.name());
             order.setPaymentMethod(PaymentMethod.COD.name());
-        }
-        if(request.getPaymentMethod().equals("vnpay")){
+        } else if ("vnpay".equals(request.getPaymentMethod())) {
             order.setStatus(OrderStatus.WAITING_PAYMENT.name());
             order.setPaymentMethod(PaymentMethod.VNPAY.name());
-            LocalDateTime now = LocalDateTime.now();
-            order.setPaymentExpiredAt(now.plusDays(1));
+            order.setPaymentExpiredAt(LocalDateTime.now().plusDays(1));
         }
-        order.setShippingAddress(request.getShippingAddress());
-        order.setIsDeleted("0");
-        order.setNote(request.getNote());
-
-
 
         Order savedOrder = orderRepository.save(order);
 
-        // ================== 5. LƯU ORDER ITEMS ==================
+        // ================== 5. CREATE ORDER ITEMS ==================
         List<OrderItems> savedItems = new ArrayList<>();
 
         for (OrderItemRequest itemReq : request.getItems()) {
 
-            ProductVariants variant = productVariantRepository.findById(itemReq.getProductVariantId())
-                    .orElseThrow(() -> new RuntimeException("Product variant not found"));
+            ProductVariants variant = variantMap.get(itemReq.getProductVariantId());
 
-            BigDecimal unitPrice = BigDecimal.valueOf(variant.getPrice()); // ✅ BigDecimal
+            BigDecimal unitPrice = BigDecimal.valueOf(variant.getPrice());
             BigDecimal quantity = BigDecimal.valueOf(itemReq.getQuantity());
-
-            BigDecimal totalPrice = unitPrice.multiply(quantity);
 
             OrderItems item = new OrderItems();
             item.setOrder(savedOrder);
             item.setProductVariant(variant);
             item.setQuantity(itemReq.getQuantity());
-            item.setUnitPrice(unitPrice);   // ✅ BigDecimal
-            item.setTotalPrice(totalPrice); // ✅ BigDecimal
+            item.setUnitPrice(unitPrice);
+            item.setTotalPrice(unitPrice.multiply(quantity));
             item.setIsDeleted("0");
 
             savedItems.add(orderItemRepository.save(item));
         }
 
-        // ================== 6. MAP RESPONSE ==================
+        // ================== 6. RESPONSE ==================
         OrderResponse response = new OrderResponse();
-
         response.setId(savedOrder.getId());
         response.setOrderCode(savedOrder.getOrderCode());
         response.setUserId(savedOrder.getUser().getId());
-        response.setTotalAmount(savedOrder.getTotalAmount());       // ✅ BigDecimal
-        response.setShippingAmount(savedOrder.getShippingAmount()); // ✅ BigDecimal
+        response.setTotalAmount(savedOrder.getTotalAmount());
+        response.setShippingAmount(savedOrder.getShippingAmount());
         response.setDiscountPercent(savedOrder.getDiscountPercent());
         response.setStatus(savedOrder.getStatus());
         response.setShippingAddress(savedOrder.getShippingAddress());
@@ -165,28 +170,19 @@ public class OrderServiceImpl implements OrderService {
         response.setCreatedDate(savedOrder.getCreatedDate());
         response.setUpdatedDate(savedOrder.getUpdatedDate());
 
-        // ================== 7. MAP ORDER ITEMS RESPONSE ==================
-        List<OrderItemResponse> itemResponses = savedItems.stream().map(item -> {
-
+        response.setItems(savedItems.stream().map(item -> {
             OrderItemResponse i = new OrderItemResponse();
             i.setOrderId(item.getOrder().getId());
             i.setProductVariantId(item.getProductVariant().getId());
             i.setQuantity(item.getQuantity());
-
-            i.setUnitPrice(item.getUnitPrice());     // ✅ BigDecimal
-            i.setTotalPrice(item.getTotalPrice());   // ✅ BigDecimal
-
-            i.setIsDeleted(item.getIsDeleted());
-            i.setCreatedDate(item.getCreatedDate());
-            i.setUpdatedDate(item.getUpdatedDate());
-
+            i.setUnitPrice(item.getUnitPrice());
+            i.setTotalPrice(item.getTotalPrice());
             return i;
-        }).toList();
-
-        response.setItems(itemResponses);
+        }).toList());
 
         return response;
     }
+
 
     @PreAuthorize("hasRole('CUSTOMER')")
     @Override
@@ -204,7 +200,7 @@ public class OrderServiceImpl implements OrderService {
         return orderPage.map(order -> {
             OrderResponse response = new OrderResponse();
             expireIfNeeded(order); // Logic kiểm tra hết hạn của bạn
-
+            response.setId(order.getId());
             response.setOrderCode(order.getOrderCode());
             response.setUserId(order.getUser().getId());
             response.setTotalAmount(order.getTotalAmount());

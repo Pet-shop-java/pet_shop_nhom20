@@ -5,6 +5,7 @@ import com.webpet_nhom20.backdend.config.JwtTokenProvider;
 import com.webpet_nhom20.backdend.dto.request.Order.CheckStockRequest;
 import com.webpet_nhom20.backdend.dto.request.Order.OrderRequest;
 import com.webpet_nhom20.backdend.dto.request.OrderItem.OrderItemRequest;
+import com.webpet_nhom20.backdend.dto.response.Order.OrderDetailResponse;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderResponse;
 import com.webpet_nhom20.backdend.dto.response.OrderItem.OrderItemResponse;
 import com.webpet_nhom20.backdend.entity.Order;
@@ -18,6 +19,7 @@ import com.webpet_nhom20.backdend.exception.ErrorCode;
 import com.webpet_nhom20.backdend.repository.OrderItemRepository;
 import com.webpet_nhom20.backdend.repository.OrderRepository;
 import com.webpet_nhom20.backdend.repository.ProductVariantRepository;
+import com.webpet_nhom20.backdend.repository.projection.OrderDetailProjection;
 import com.webpet_nhom20.backdend.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +38,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -111,6 +118,7 @@ public class OrderServiceImpl implements OrderService {
 
         // ================== 4. CREATE ORDER ==================
         Order order = new Order();
+
         User user = new User();
         user.setId(userIdFromToken());
 
@@ -131,6 +139,11 @@ public class OrderServiceImpl implements OrderService {
             order.setPaymentMethod(PaymentMethod.VNPAY.name());
             order.setPaymentExpiredAt(LocalDateTime.now().plusDays(1));
         }
+        order.setShippingAddress(request.getShippingAddress());
+        order.setIsDeleted("0");
+        order.setNote(request.getNote());
+
+
 
         Order savedOrder = orderRepository.save(order);
 
@@ -143,6 +156,8 @@ public class OrderServiceImpl implements OrderService {
 
             BigDecimal unitPrice = BigDecimal.valueOf(variant.getPrice());
             BigDecimal quantity = BigDecimal.valueOf(itemReq.getQuantity());
+
+            BigDecimal totalPrice = unitPrice.multiply(quantity);
 
             OrderItems item = new OrderItems();
             item.setOrder(savedOrder);
@@ -157,6 +172,7 @@ public class OrderServiceImpl implements OrderService {
 
         // ================== 6. RESPONSE ==================
         OrderResponse response = new OrderResponse();
+
         response.setId(savedOrder.getId());
         response.setOrderCode(savedOrder.getOrderCode());
         response.setUserId(savedOrder.getUser().getId());
@@ -227,15 +243,36 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
         return "Hủy đơn hàng thành công";
     }
-    public OrderResponse findOrderItemsByOrderId(Integer orderId) {
-        Integer Id = userIdFromToken();
-        List<OrderItemResponse> order = orderItemRepository.findByOrderId(orderId);
 
-        OrderResponse response = new OrderResponse();
-        response.setId(orderId);
-        response.setItems(order);
 
-        return response;
+    public List<OrderDetailResponse> getOrderDetails(Integer orderId) {
+        // 1. Lấy dữ liệu thô từ SQL
+        List<OrderDetailProjection> projections = orderRepository.getOrderDetailsNative(orderId);
+
+        // 2. Map sang DTO Response
+        return projections.stream()
+                .map(p -> OrderDetailResponse.builder()
+                        .orderId(p.getOrderPrimaryId())
+                        .orderCode(p.getOrderCode())
+                        .status(p.getStatus())
+                        .totalAmount(p.getTotalAmount())
+                        .shippingAddress(p.getShippingAddress())
+                        .orderDate(p.getOrderDate())
+
+                        .orderItemId(p.getOrderItemId())
+                        .quantity(p.getQuantity())
+                        .unitPrice(p.getUnitPrice())
+                        .totalPrice(p.getTotalPrice())
+
+                        .productName(p.getProductName())
+
+                        .variantId(p.getVariantId())
+                        .variantPrice(p.getPrice())
+                        .stockQuantity(p.getStockQuantity())
+
+                        .imageUrl(p.getImageUrl())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     @Override

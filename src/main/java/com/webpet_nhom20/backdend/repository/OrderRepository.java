@@ -74,7 +74,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 """)
     Page<Order> searchOrders(
             @Param("orderCode") String orderCode,
-            @Param("status") OrderStatus status,
+            @Param("status") String status,
             @Param("address") String address,
             @Param("fromDate") LocalDateTime fromDate,
             @Param("toDate") LocalDateTime toDate,

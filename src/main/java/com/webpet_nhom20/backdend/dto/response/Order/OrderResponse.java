@@ -22,6 +22,8 @@ public class OrderResponse {
 
     int userId;
 
+    String fullName;
+
     BigDecimal totalAmount;
 
     BigDecimal shippingAmount;
@@ -41,5 +43,6 @@ public class OrderResponse {
     Date updatedDate;
 
     List<OrderItemResponse> items;
+    List<OrderDetailResponse> orderItems;
 
 }

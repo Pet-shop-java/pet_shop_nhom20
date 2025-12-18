@@ -221,7 +221,7 @@ public class OrderServiceImpl implements OrderService {
             expireIfNeeded(order); // Logic kiểm tra hết hạn của bạn
             response.setId(order.getId());
             response.setOrderCode(order.getOrderCode());
-            response.setUserId(order.getUser().getId());
+            response.setFullName(order.getUser().getFullName());
             response.setTotalAmount(order.getTotalAmount());
             response.setShippingAmount(order.getShippingAmount());
             response.setShippingAddress(order.getShippingAddress());
@@ -237,12 +237,14 @@ public class OrderServiceImpl implements OrderService {
     @PreAuthorize("hasRole('SHOP')")
     public Page<OrderResponse> searchOrders(
             String orderCode,
-            OrderStatus status,
+            String status,
             String address,
             LocalDateTime fromDate,
             LocalDateTime toDate,
             Pageable pageable
     ) {
+
+
         Page<Order> orderPage = orderRepository.searchOrders(
                 orderCode,
                 status,
@@ -253,6 +255,26 @@ public class OrderServiceImpl implements OrderService {
         );
         return orderPage.map(order -> {
             OrderResponse response = new OrderResponse();
+            List<OrderDetailProjection> projections = orderRepository.getOrderDetailsNative(order.getId());
+            List<OrderDetailResponse> orderDetails = projections.stream()
+                    .map(p -> OrderDetailResponse.builder()
+                            .orderId(p.getOrderPrimaryId())
+                            .orderCode(p.getOrderCode())
+                            .status(p.getStatus())
+                            .totalAmount(p.getTotalAmount())
+                            .shippingAddress(p.getShippingAddress())
+                            .orderDate(p.getOrderDate())
+                            .orderItemId(p.getOrderItemId())
+                            .quantity(p.getQuantity())
+                            .unitPrice(p.getUnitPrice())
+                            .totalPrice(p.getTotalPrice())
+                            .productName(p.getProductName())
+                            .variantId(p.getVariantId())
+                            .variantPrice(p.getPrice())
+                            .stockQuantity(p.getStockQuantity())
+                            .imageUrl(p.getImageUrl())
+                            .build())
+                    .toList();
             response.setId(order.getId());
             response.setOrderCode(order.getOrderCode());
             response.setUserId(order.getUser().getId());
@@ -262,6 +284,7 @@ public class OrderServiceImpl implements OrderService {
             response.setNote(order.getNote());
             response.setStatus(order.getStatus());
             response.setCreatedDate(order.getCreatedDate());
+            response.setOrderItems(orderDetails);
             return response;
         });
     }
@@ -295,7 +318,6 @@ public class OrderServiceImpl implements OrderService {
                         .totalAmount(p.getTotalAmount())
                         .shippingAddress(p.getShippingAddress())
                         .orderDate(p.getOrderDate())
-
                         .orderItemId(p.getOrderItemId())
                         .quantity(p.getQuantity())
                         .unitPrice(p.getUnitPrice())

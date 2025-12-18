@@ -92,7 +92,7 @@ public class OrderController {
     @GetMapping("/admin/orders")
     public ApiResponse<Page<OrderResponse>> getOrders(
             @RequestParam(required = false) String orderCode,
-            @RequestParam(required = false) OrderStatus status,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String address,
             @RequestParam(required = false)
             @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")

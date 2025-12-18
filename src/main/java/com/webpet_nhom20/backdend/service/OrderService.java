@@ -22,7 +22,7 @@ public interface OrderService {
     public List<OrderDetailResponse> getOrderDetails(Integer orderId);
     public Page<OrderResponse> searchOrders(
             String orderCode,
-            OrderStatus status,
+            String status,
             String address,
             LocalDateTime fromDate,
             LocalDateTime toDate,

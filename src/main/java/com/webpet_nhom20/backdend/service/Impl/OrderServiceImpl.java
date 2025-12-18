@@ -27,12 +27,15 @@ import org.apache.catalina.security.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -202,7 +205,7 @@ public class OrderServiceImpl implements OrderService {
 
     @PreAuthorize("hasRole('CUSTOMER')")
     @Override
-    public Page<OrderResponse> getAllOrder(String status, Pageable pageable) {
+    public Page<OrderResponse> getAllOrderForUser(String status, Pageable pageable) {
         Integer userId = userIdFromToken();
         Page<Order> orderPage;
 
@@ -229,6 +232,40 @@ public class OrderServiceImpl implements OrderService {
             return response;
         });
     }
+
+
+    @PreAuthorize("hasRole('SHOP')")
+    public Page<OrderResponse> searchOrders(
+            String orderCode,
+            OrderStatus status,
+            String address,
+            LocalDateTime fromDate,
+            LocalDateTime toDate,
+            Pageable pageable
+    ) {
+        Page<Order> orderPage = orderRepository.searchOrders(
+                orderCode,
+                status,
+                address,
+                fromDate,
+                toDate,
+                pageable
+        );
+        return orderPage.map(order -> {
+            OrderResponse response = new OrderResponse();
+            response.setId(order.getId());
+            response.setOrderCode(order.getOrderCode());
+            response.setUserId(order.getUser().getId());
+            response.setTotalAmount(order.getTotalAmount());
+            response.setShippingAmount(order.getShippingAmount());
+            response.setShippingAddress(order.getShippingAddress());
+            response.setNote(order.getNote());
+            response.setStatus(order.getStatus());
+            response.setCreatedDate(order.getCreatedDate());
+            return response;
+        });
+    }
+
     public String cancelOrder(String orderCode) throws AppException {
         Order order = orderRepository.findByOrderCode(orderCode)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
@@ -274,6 +311,8 @@ public class OrderServiceImpl implements OrderService {
                         .build())
                 .collect(Collectors.toList());
     }
+
+
 
     @Override
     public void checkStock(CheckStockRequest request) {

@@ -16,11 +16,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.ResponseEntity;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -48,16 +48,18 @@ public class OrderController {
     }
 
     @GetMapping()
-    public ApiResponse<Page<OrderResponse>> getAllOrder(
+    public ApiResponse<Page<OrderResponse>> getAllOrderForUser(
             @PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC)
             Pageable pageable, @RequestParam(required = false) String status) {
-        Page<OrderResponse> orderResponse = orderService.getAllOrder(status, pageable);
+        Page<OrderResponse> orderResponse = orderService.getAllOrderForUser(status, pageable);
         return ApiResponse.<Page<OrderResponse>>builder()
                 .success(true)
                 .message("successfully")
                 .result(orderResponse)
                 .build();
     }
+
+
     @PutMapping("cancel/{orderCode}")
     public ApiResponse<String> cancelOrder(@PathVariable String orderCode){
         String result = orderService.cancelOrder(orderCode);
@@ -85,4 +87,31 @@ public class OrderController {
                 .result(result)
                 .build();
     }
+
+
+    @GetMapping("/admin/orders")
+    public ApiResponse<Page<OrderResponse>> getOrders(
+            @RequestParam(required = false) String orderCode,
+            @RequestParam(required = false) OrderStatus status,
+            @RequestParam(required = false) String address,
+            @RequestParam(required = false)
+            @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+            LocalDateTime fromDate,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+            LocalDateTime toDate,
+
+            Pageable pageable
+    ) {
+        Page<OrderResponse> response = orderService.searchOrders(
+                orderCode, status, address, fromDate, toDate, pageable
+        );
+        return ApiResponse.<Page<OrderResponse>>builder()
+                .success(true)
+                .message("successfully")
+                .result(response)
+                .build();
+    }
+
 }

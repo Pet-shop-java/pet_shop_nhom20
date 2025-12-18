@@ -14,6 +14,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,6 +57,30 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
         WHERE o.id = :orderId
     """, nativeQuery = true)
     List<OrderDetailProjection> getOrderDetailsNative(@Param("orderId") Integer orderId);
+
+
+
+
+    @Query("""
+    SELECT o FROM Order o
+    WHERE (:orderCode IS NULL 
+           OR LOWER(o.orderCode) LIKE LOWER(CONCAT('%', :orderCode, '%')))
+      AND (:status IS NULL OR o.status = :status)
+      AND (:address IS NULL 
+           OR LOWER(o.shippingAddress) LIKE LOWER(CONCAT('%', :address, '%')))
+      AND (:fromDate IS NULL OR o.createdDate >= :fromDate)
+      AND (:toDate IS NULL OR o.createdDate <= :toDate)
+      AND o.isDeleted = '0'
+""")
+    Page<Order> searchOrders(
+            @Param("orderCode") String orderCode,
+            @Param("status") OrderStatus status,
+            @Param("address") String address,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("toDate") LocalDateTime toDate,
+            Pageable pageable
+    );
+
 
 
 }

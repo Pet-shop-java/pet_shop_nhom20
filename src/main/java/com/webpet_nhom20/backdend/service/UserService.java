@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface UserService  {
 
-    public UserResponse createUser(UserCreationRequest request);
+    public UserResponse createUser(UserCreationRequest request, String otp);
 
     public UserResponse updateUser(int userId, UserUpdateRequest request);
 

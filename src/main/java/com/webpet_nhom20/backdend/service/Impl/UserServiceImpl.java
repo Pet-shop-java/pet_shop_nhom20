@@ -11,6 +11,7 @@ import com.webpet_nhom20.backdend.exception.ErrorCode;
 import com.webpet_nhom20.backdend.repository.CartRepository;
 import com.webpet_nhom20.backdend.repository.RoleRepository;
 import com.webpet_nhom20.backdend.repository.UserRepository;
+import com.webpet_nhom20.backdend.service.OtpService;
 import com.webpet_nhom20.backdend.service.UserService;
 import com.webpet_nhom20.backdend.mapper.UserMapper;
 import lombok.AccessLevel;
@@ -41,8 +42,10 @@ public class UserServiceImpl implements UserService {
     private CartRepository cartRepository;
     @Autowired
     PasswordEncoder passwordEncoder;
-
-    public UserResponse createUser(UserCreationRequest request){
+    @Autowired
+    private OtpService otpService;
+    public UserResponse createUser(UserCreationRequest request, String otp) {
+        otpService.verifyOtp(request.getEmail(), otp);
         if(userRepository.existsByUsername(request.getUsername())){
             throw new AppException(ErrorCode.USER_EXISTED);
         }

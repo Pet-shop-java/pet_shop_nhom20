@@ -68,5 +68,10 @@ public class GlobalExceptionHandler {
                         .build()
         );
     }
+    public static class InvalidOrderStatusException extends RuntimeException{
+        public InvalidOrderStatusException(String message) {
+            super(message);
+        }
+    }
 
 }

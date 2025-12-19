@@ -3,9 +3,11 @@ package com.webpet_nhom20.backdend.controller;
 
 import com.webpet_nhom20.backdend.dto.request.Order.CheckStockRequest;
 import com.webpet_nhom20.backdend.dto.request.Order.OrderRequest;
+import com.webpet_nhom20.backdend.dto.request.Order.UpdateOrderStatusRequest;
 import com.webpet_nhom20.backdend.dto.response.ApiResponse;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderDetailResponse;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderResponse;
+import com.webpet_nhom20.backdend.dto.response.Order.UpdateOrderStatusResponse;
 import com.webpet_nhom20.backdend.enums.OrderStatus;
 import com.webpet_nhom20.backdend.service.OrderService;
 import jakarta.validation.Valid;
@@ -111,6 +113,15 @@ public class OrderController {
                 .success(true)
                 .message("successfully")
                 .result(response)
+                .build();
+    }
+    @PutMapping("/update-status")
+    public ApiResponse<UpdateOrderStatusResponse> updateOrderStatus(
+            @Valid @RequestBody UpdateOrderStatusRequest request
+    ){
+        return ApiResponse.<UpdateOrderStatusResponse>builder()
+                .success(true)
+                .result(orderService.updateOrderStatus(request))
                 .build();
     }
 

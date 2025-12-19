@@ -81,6 +81,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             Pageable pageable
     );
 
+    Optional<Order> findByIdAndOrderCode(int orderId, String orderCode);
 
 
 }

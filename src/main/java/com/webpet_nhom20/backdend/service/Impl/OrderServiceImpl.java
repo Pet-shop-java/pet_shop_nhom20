@@ -4,9 +4,11 @@ import com.nimbusds.jwt.SignedJWT;
 import com.webpet_nhom20.backdend.config.JwtTokenProvider;
 import com.webpet_nhom20.backdend.dto.request.Order.CheckStockRequest;
 import com.webpet_nhom20.backdend.dto.request.Order.OrderRequest;
+import com.webpet_nhom20.backdend.dto.request.Order.UpdateOrderStatusRequest;
 import com.webpet_nhom20.backdend.dto.request.OrderItem.OrderItemRequest;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderDetailResponse;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderResponse;
+import com.webpet_nhom20.backdend.dto.response.Order.UpdateOrderStatusResponse;
 import com.webpet_nhom20.backdend.dto.response.OrderItem.OrderItemResponse;
 import com.webpet_nhom20.backdend.entity.Order;
 import com.webpet_nhom20.backdend.entity.OrderItems;
@@ -16,6 +18,7 @@ import com.webpet_nhom20.backdend.enums.OrderStatus;
 import com.webpet_nhom20.backdend.enums.PaymentMethod;
 import com.webpet_nhom20.backdend.exception.AppException;
 import com.webpet_nhom20.backdend.exception.ErrorCode;
+import com.webpet_nhom20.backdend.exception.GlobalExceptionHandler;
 import com.webpet_nhom20.backdend.repository.OrderItemRepository;
 import com.webpet_nhom20.backdend.repository.OrderRepository;
 import com.webpet_nhom20.backdend.repository.ProductVariantRepository;
@@ -215,7 +218,6 @@ public class OrderServiceImpl implements OrderService {
         } else {
             orderPage = orderRepository.findAllByUserId(userId, pageable);
         }
-
         return orderPage.map(order -> {
             OrderResponse response = new OrderResponse();
             expireIfNeeded(order); // Logic kiểm tra hết hạn của bạn
@@ -228,7 +230,6 @@ public class OrderServiceImpl implements OrderService {
             response.setNote(order.getNote());
             response.setStatus(order.getStatus());
             response.setCreatedDate(order.getCreatedDate());
-
             return response;
         });
     }
@@ -332,6 +333,40 @@ public class OrderServiceImpl implements OrderService {
                         .imageUrl(p.getImageUrl())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+
+
+
+    @PreAuthorize("hasRole('SHOP')")
+    public UpdateOrderStatusResponse updateOrderStatus (UpdateOrderStatusRequest request) {
+
+        List<String> success = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
+
+        for (UpdateOrderStatusRequest.OrderUpdate orderUpdate : request.getOrderUpdateList() ){
+            try{
+                Order order = orderRepository.findByIdAndOrderCode(orderUpdate.getId(),orderUpdate.getOrderCode()).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+
+                OrderStatus currentStatus = OrderStatus.valueOf(order.getStatus());
+                OrderStatus newStatus = OrderStatus.valueOf(orderUpdate.getOrderStatus());
+
+                if (!OrderStatus.canTransition(currentStatus, newStatus)){
+                    throw new GlobalExceptionHandler.InvalidOrderStatusException(
+                            "Invalid transition: "
+                                    + currentStatus + " → " + newStatus
+                    );
+                }
+                order.setStatus(newStatus.name());
+                orderRepository.save(order);
+                success.add(orderUpdate.getOrderCode());
+            }catch (AppException e){
+                failed.add(orderUpdate.getOrderCode());
+            }catch (Exception e){
+                failed.add(orderUpdate.getOrderCode());
+            }
+        }
+        return new UpdateOrderStatusResponse(success,failed);
     }
 
 

@@ -2,8 +2,10 @@ package com.webpet_nhom20.backdend.service;
 
 import com.webpet_nhom20.backdend.dto.request.Order.CheckStockRequest;
 import com.webpet_nhom20.backdend.dto.request.Order.OrderRequest;
+import com.webpet_nhom20.backdend.dto.request.Order.UpdateOrderStatusRequest;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderDetailResponse;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderResponse;
+import com.webpet_nhom20.backdend.dto.response.Order.UpdateOrderStatusResponse;
 import com.webpet_nhom20.backdend.entity.Order;
 import com.webpet_nhom20.backdend.enums.OrderStatus;
 import com.webpet_nhom20.backdend.exception.AppException;
@@ -28,7 +30,7 @@ public interface OrderService {
             LocalDateTime toDate,
             Pageable pageable
     );
-
+    public UpdateOrderStatusResponse updateOrderStatus (UpdateOrderStatusRequest request);
 //    @Transactional
 //    public void markPaid(String orderCode) ;
 //

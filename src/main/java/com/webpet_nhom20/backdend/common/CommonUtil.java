@@ -132,6 +132,58 @@ public class CommonUtil {
 
 				"</div>";
 	}
+	// Mail quên mật khẩu
+	public static String buildOtpForgotPasswordEmailSubject(String userFullName) {
+		return "Mã OTP xác thực tài khoản Pet Shop cho anh/chị " + userFullName;
+	}
+
+	public static String buildOtpForgotPasswordEmailHtml(
+			String userFullName,
+			String otp,
+			int expiredMinutes
+	) {
+
+		String shopName = "Pet Shop";
+		String supportPhone = "+84 912 345 678";
+		String supportEmail = "support@petshop.vn";
+		String address = "123 Đường ABC, Thường Tín, TP. Hà Nội";
+
+		return "<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#1f2937\">" +
+
+				"<h2 style=\"color:#ffc107;margin:0 0 12px\">" + shopName + "</h2>" +
+
+				"<h3 style=\"color:#111827;margin:0 0 12px\">Xác thực bằng mã OTP</h3>" +
+
+				"<p>Chào <strong>" + escapeHtml(userFullName) + "</strong>,</p>" +
+
+				"<p>Bạn đã yêu cầu xác thực bằng mã OTP. Vui lòng sử dụng mã dưới đây:</p>" +
+
+				"<div style=\"margin:16px 0;padding:16px;border:1px dashed #f59e0b;" +
+				"text-align:center;font-size:24px;font-weight:bold;letter-spacing:4px;color:#92400e\">" +
+				escapeHtml(otp) +
+				"</div>" +
+
+				"<table style=\"border-collapse:collapse;width:100%;max-width:560px\">" +
+				"<tbody>" +
+				row("Thời hạn OTP", expiredMinutes + " phút") +
+				"</tbody>" +
+				"</table>" +
+
+				"<p style=\"margin-top:16px\">" +
+				"Vui lòng <strong>không chia sẻ mã này cho bất kỳ ai</strong>. " +
+				"Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email." +
+				"</p>" +
+
+				"<div style=\"margin-top:20px;padding-top:12px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:13px\">" +
+				"<p style=\"margin:0\"><strong>" + shopName + "</strong></p>" +
+				"<p style=\"margin:0\">" + address + "</p>" +
+				"<p style=\"margin:0\">Hotline: " + supportPhone + " · Email: " + supportEmail + "</p>" +
+				"</div>" +
+
+				"</div>";
+	}
+
+
 
 
 }

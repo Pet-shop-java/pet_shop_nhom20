@@ -33,6 +33,18 @@ public class ProductController {
                 .message("Lấy danh sách sản phẩm thành công")
                 .result(productService.getAllProduct(pageable,categoryId,search,minPrice, maxPrice, animal , brand, isFeature, isDelete)).build();
     }
+
+    @GetMapping("/admin")
+    public ApiResponse<Page<ProductResponse>> getAllProductsForAdmin(@RequestParam(required = false) String search, @RequestParam(required = false) Integer categoryId,
+                                                             Pageable pageable, @RequestParam (required = false) Double minPrice, @RequestParam(required = false) Double maxPrice,
+                                                             @RequestParam (required = false) String animal, @RequestParam (required = false) String brand,
+                                                             @RequestParam (required = false) String isFeature, @RequestParam (required = false) String isDelete){
+        return ApiResponse.<Page<ProductResponse>>builder().
+                success(true)
+                .message("Lấy danh sách sản phẩm thành công")
+                .result(productService.getAllProductForAdmin(pageable,categoryId,search,minPrice, maxPrice, animal , brand, isFeature, isDelete)).build();
+    }
+
     @GetMapping("/{productId}")
     public ApiResponse<ProductResponse> getProductById(@PathVariable int productId ){
         ProductResponse response = productService.getProductById(productId );
@@ -42,6 +54,18 @@ public class ProductController {
                 .result(response)
                 .build();
     }
+
+    @GetMapping("/admin/{productId}")
+    public ApiResponse<ProductResponse> getProductForAdmin(@PathVariable int productId ){
+        ProductResponse response = productService.getProductByIdForAdmin(productId );
+        return ApiResponse.<ProductResponse>builder()
+                .success(true)
+                .message("")
+                .result(response)
+                .build();
+    }
+
+
     @PostMapping
     public ApiResponse<ProductResponse> createProduct(@RequestBody @Valid CreateProductRequest request) {
         return ApiResponse.<ProductResponse>builder()
@@ -65,7 +89,6 @@ public class ProductController {
                 .message(productService.deleteProduct(productId))
                 .build();
     }
-
     @PostMapping("/create-all")
     public ApiResponse<FullProductCreateResponse> createFullProduct(
             @Valid @RequestBody FullProductCreateRequest request) {

@@ -26,5 +26,7 @@ public interface ProductService {
 
     FullProductCreateResponse createFullProduct(FullProductCreateRequest request);
     List<BrandResponse> getBrand();
+    public Page<ProductResponse> getAllProductForAdmin(Pageable pageable, Integer categoryId, String search, Double minPrice, Double maxPrice, String animal, String brand, String isFeature, String isDelete);
+    public ProductResponse getProductByIdForAdmin(int productId);
 
 }

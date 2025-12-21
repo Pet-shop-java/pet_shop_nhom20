@@ -354,6 +354,9 @@ public class ProductServiceImpl implements ProductService {
     }
 
 
+    public boolean checkExistProductByName(String productName) {
+        return productRepository.existsByName(productName);
+    }
 
 
 

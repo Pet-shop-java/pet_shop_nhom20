@@ -1,5 +1,6 @@
 package com.webpet_nhom20.backdend.controller;
 
+import com.webpet_nhom20.backdend.dto.request.Product.CheckProductNameRequest;
 import com.webpet_nhom20.backdend.dto.request.Product.FullProductCreateRequest;
 import com.webpet_nhom20.backdend.dto.request.Product.CreateProductRequest;
 import com.webpet_nhom20.backdend.dto.request.Product.UpdateProductRequest;
@@ -65,6 +66,16 @@ public class ProductController {
                 .build();
     }
 
+    @PostMapping("/check-exists")
+    public ApiResponse<Boolean> checkExistProduct( @RequestBody CheckProductNameRequest request){
+        String productName = request.getName();
+        boolean isExist = productService.checkExistProductByName(productName);
+        return ApiResponse.<Boolean>builder()
+                .success(true)
+                .message("Kiểm tra tồn tại sản phẩm thành công")
+                .result(isExist)
+                .build();
+    }
 
     @PostMapping
     public ApiResponse<ProductResponse> createProduct(@RequestBody @Valid CreateProductRequest request) {

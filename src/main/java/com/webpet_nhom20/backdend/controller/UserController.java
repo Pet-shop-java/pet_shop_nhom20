@@ -6,6 +6,7 @@ import com.webpet_nhom20.backdend.dto.request.User.UserCreationRequest;
 import com.webpet_nhom20.backdend.dto.request.User.UserUpdateRequest;
 import com.webpet_nhom20.backdend.dto.response.ApiResponse;
 import com.webpet_nhom20.backdend.dto.response.User.UserResponse;
+import com.webpet_nhom20.backdend.service.OtpService;
 import com.webpet_nhom20.backdend.service.UserService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -21,13 +22,20 @@ import java.util.List;
 public class UserController {
     @Autowired
     private UserService userService;
+    @Autowired
+    private OtpService otpService;
 
+    @PostMapping("/send-otp")
+    public String sendOtp(@RequestParam String email) {
+        otpService.sendOtp(email);
+        return "OTP đã được gửi về email";
+    }
     @PostMapping()
-    ApiResponse<UserResponse> createUser(@RequestBody @Valid UserCreationRequest request){
+    ApiResponse<UserResponse> createUser(@RequestBody @Valid UserCreationRequest request, @RequestParam String otp){
         return ApiResponse.<UserResponse>builder()
                 .success(true)
                 .message("Create user successfully")
-                .result(userService.createUser(request))
+                .result(userService.createUser(request, otp))
                 .build();
     }
 

@@ -5,10 +5,7 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.webpet_nhom20.backdend.dto.request.Auth.AuthenticationRequest;
-import com.webpet_nhom20.backdend.dto.request.Auth.IntrospectRequest;
-import com.webpet_nhom20.backdend.dto.request.Auth.LogoutRequest;
-import com.webpet_nhom20.backdend.dto.request.Auth.RefreshRequest;
+import com.webpet_nhom20.backdend.dto.request.Auth.*;
 import com.webpet_nhom20.backdend.dto.response.Auth.AuthenticationResponse;
 import com.webpet_nhom20.backdend.dto.response.Auth.IntrospectResponse;
 import com.webpet_nhom20.backdend.entity.InvalidatedToken;
@@ -19,6 +16,7 @@ import com.webpet_nhom20.backdend.exception.ErrorCode;
 import com.webpet_nhom20.backdend.repository.InvalidatedTokenRepository;
 import com.webpet_nhom20.backdend.repository.UserRepository;
 import com.webpet_nhom20.backdend.service.AuthenticationService;
+import com.webpet_nhom20.backdend.service.OtpService;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +38,8 @@ import java.util.UUID;
 public class AuthenticationServiceImpl implements AuthenticationService {
     @Autowired
     private InvalidatedTokenRepository invalidatedTokenRepository;
-
+    @Autowired
+    private OtpService otpService;
 
     @Autowired
     private UserRepository userRepository;
@@ -69,6 +68,24 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return IntrospectResponse.builder()
                 .valid(isValid)
                 .build();
+    }
+    @Override
+    public void SendMailForgotPassword(ForgotPasswordRequest request)  {
+        var user = userRepository.findByUsernameOrEmail(request.getIdentifier(), request.getIdentifier()).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTS));
+        if ("1".equals(user.getIsDeleted())) {
+            throw new AppException(ErrorCode.USER_DELETED);
+        }
+        otpService.sendOtpForgotPassword(user.getEmail());
+    }
+    @Override
+    public void ChangePassword(AuthenticationRequest request){
+        var user = userRepository.findByUsernameOrEmail(request.getIdentifier(), request.getIdentifier()).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTS));
+        if ("1".equals(user.getIsDeleted())) {
+            throw new AppException(ErrorCode.USER_DELETED);
+        }
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        userRepository.save(user);
     }
 
     @Override

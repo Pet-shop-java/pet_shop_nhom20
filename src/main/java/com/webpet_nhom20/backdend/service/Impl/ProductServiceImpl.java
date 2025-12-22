@@ -262,6 +262,11 @@ public class ProductServiceImpl implements ProductService {
         // 1. Tạo và lưu đối tượng Product chính
         Categories categories = categoryRepository.findById(request.getCategoryId()).orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
 
+        boolean existsProduct = productRepository.existsByName(request.getName());
+        if (existsProduct) {
+            throw new AppException(ErrorCode.PRODUCT_IS_EXISTED);
+        }
+
         Products product = Products.builder()
                 .name(request.getName())
                 .category(categories)
@@ -357,7 +362,6 @@ public class ProductServiceImpl implements ProductService {
     public boolean checkExistProductByName(String productName) {
         return productRepository.existsByName(productName);
     }
-
 
 
     // Hàm map Products entity sang ProductResponse DTO

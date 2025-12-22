@@ -124,5 +124,15 @@ public class OrderController {
                 .result(orderService.updateOrderStatus(request))
                 .build();
     }
-
+    @PutMapping("/{orderId}/payment-method")
+    public ApiResponse<Void> updatePaymentMethod(
+            @PathVariable Integer orderId,
+            @RequestParam String method
+    ) {
+        orderService.updatePaymentMethod(orderId, method);
+        return ApiResponse.<Void>builder()
+                .success(true)
+                .message("Payment method updated successfully")
+                .build();
+    }
 }

@@ -10,10 +10,7 @@ import com.webpet_nhom20.backdend.dto.response.Order.OrderDetailResponse;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderResponse;
 import com.webpet_nhom20.backdend.dto.response.Order.UpdateOrderStatusResponse;
 import com.webpet_nhom20.backdend.dto.response.OrderItem.OrderItemResponse;
-import com.webpet_nhom20.backdend.entity.Order;
-import com.webpet_nhom20.backdend.entity.OrderItems;
-import com.webpet_nhom20.backdend.entity.ProductVariants;
-import com.webpet_nhom20.backdend.entity.User;
+import com.webpet_nhom20.backdend.entity.*;
 import com.webpet_nhom20.backdend.enums.OrderStatus;
 import com.webpet_nhom20.backdend.enums.PaymentMethod;
 import com.webpet_nhom20.backdend.exception.AppException;
@@ -299,7 +296,19 @@ public class OrderServiceImpl implements OrderService {
         if (!isCancelable) {
             throw new AppException(ErrorCode.CANNOT_CANCEL_ORDER);
         }
-
+        int orderId = order.getId();
+        ProductVariants variant ;
+        List<OrderItems> items = orderItemRepository.findByOrderIdQuery(orderId);
+        for (OrderItems item : items) {
+            variant = item.getProductVariant();
+            variant.setStockQuantity(
+                    variant.getStockQuantity() + item.getQuantity()
+            );
+            variant.setSoldQuantity(
+                    variant.getSoldQuantity() - item.getQuantity()
+            );
+            productVariantRepository.save(variant);
+        }
         order.setStatus(OrderStatus.CANCELLED.name());
         orderRepository.save(order);
         return "Hủy đơn hàng thành công";
@@ -404,6 +413,21 @@ public class OrderServiceImpl implements OrderService {
 //    }
 
 
+    public void updatePaymentMethod(Integer orderId, String method) {
+        Integer userId = userIdFromToken();
+        Order order = orderRepository.findByIdAndUserId(orderId, userId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        if ("cod".equals(method)) {
+            order.setPaymentMethod(PaymentMethod.COD.name());
+            order.setStatus(OrderStatus.PROCESSING.name());
+        } else if ("vnpay".equals(method)) {
+            order.setPaymentMethod(PaymentMethod.VNPAY.name());
+        } else {
+            throw new RuntimeException("Invalid payment method");
+        }
+
+        orderRepository.save(order);
+    }
 
 
     private Integer userIdFromToken(){
@@ -433,6 +457,18 @@ public class OrderServiceImpl implements OrderService {
 
         if (order.getPaymentExpiredAt().isBefore(LocalDateTime.now())) {
             order.setStatus(OrderStatus.CANCELLED.name());
+            ProductVariants variant =  new ProductVariants();
+            List<OrderItems> items = orderItemRepository.findByOrderIdQuery(order.getId());
+            for (OrderItems item : items) {
+                variant = item.getProductVariant();
+                variant.setStockQuantity(
+                        variant.getStockQuantity() + item.getQuantity()
+                );
+                variant.setSoldQuantity(
+                        variant.getSoldQuantity() - item.getQuantity()
+                );
+                productVariantRepository.save(variant);
+            }
             orderRepository.save(order);
         }
     }

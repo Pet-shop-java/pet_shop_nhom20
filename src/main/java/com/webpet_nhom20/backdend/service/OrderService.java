@@ -31,6 +31,7 @@ public interface OrderService {
             Pageable pageable
     );
     public UpdateOrderStatusResponse updateOrderStatus (UpdateOrderStatusRequest request);
+    public void updatePaymentMethod(Integer orderId, String method);
 //    @Transactional
 //    public void markPaid(String orderCode) ;
 //

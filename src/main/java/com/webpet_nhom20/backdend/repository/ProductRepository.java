@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Products,Integer>, JpaSpecificationExecutor<Products> {
-    boolean existsByName(String name);
+
     List<Products> findAllByCategoryId(int categoryId);
 
     Page<Products> findByCategoryId(int categoryId, Pageable pageable);
@@ -136,6 +136,16 @@ public interface ProductRepository extends JpaRepository<Products,Integer>, JpaS
         GROUP BY p.brand
     """)
     List<BrandResponse> getBrand();
+
+
+    @Query("""
+    SELECT COUNT(p) > 0
+    FROM Products p
+    WHERE LOWER(p.name) = LOWER(:name)
+    """)
+    boolean existsByNameIgnoreCase(String name);
+
+    boolean existsByName(String name);
 
 
 }

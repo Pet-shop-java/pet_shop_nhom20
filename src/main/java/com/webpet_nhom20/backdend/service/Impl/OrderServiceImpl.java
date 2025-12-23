@@ -4,18 +4,18 @@ import com.nimbusds.jwt.SignedJWT;
 import com.webpet_nhom20.backdend.config.JwtTokenProvider;
 import com.webpet_nhom20.backdend.dto.request.Order.CheckStockRequest;
 import com.webpet_nhom20.backdend.dto.request.Order.OrderRequest;
+import com.webpet_nhom20.backdend.dto.request.Order.UpdateOrderStatusRequest;
 import com.webpet_nhom20.backdend.dto.request.OrderItem.OrderItemRequest;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderDetailResponse;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderResponse;
+import com.webpet_nhom20.backdend.dto.response.Order.UpdateOrderStatusResponse;
 import com.webpet_nhom20.backdend.dto.response.OrderItem.OrderItemResponse;
-import com.webpet_nhom20.backdend.entity.Order;
-import com.webpet_nhom20.backdend.entity.OrderItems;
-import com.webpet_nhom20.backdend.entity.ProductVariants;
-import com.webpet_nhom20.backdend.entity.User;
+import com.webpet_nhom20.backdend.entity.*;
 import com.webpet_nhom20.backdend.enums.OrderStatus;
 import com.webpet_nhom20.backdend.enums.PaymentMethod;
 import com.webpet_nhom20.backdend.exception.AppException;
 import com.webpet_nhom20.backdend.exception.ErrorCode;
+import com.webpet_nhom20.backdend.exception.GlobalExceptionHandler;
 import com.webpet_nhom20.backdend.repository.OrderItemRepository;
 import com.webpet_nhom20.backdend.repository.OrderRepository;
 import com.webpet_nhom20.backdend.repository.ProductVariantRepository;
@@ -215,20 +215,18 @@ public class OrderServiceImpl implements OrderService {
         } else {
             orderPage = orderRepository.findAllByUserId(userId, pageable);
         }
-
         return orderPage.map(order -> {
             OrderResponse response = new OrderResponse();
             expireIfNeeded(order); // Logic kiểm tra hết hạn của bạn
             response.setId(order.getId());
             response.setOrderCode(order.getOrderCode());
-            response.setUserId(order.getUser().getId());
+            response.setFullName(order.getUser().getFullName());
             response.setTotalAmount(order.getTotalAmount());
             response.setShippingAmount(order.getShippingAmount());
             response.setShippingAddress(order.getShippingAddress());
             response.setNote(order.getNote());
             response.setStatus(order.getStatus());
             response.setCreatedDate(order.getCreatedDate());
-
             return response;
         });
     }
@@ -237,12 +235,14 @@ public class OrderServiceImpl implements OrderService {
     @PreAuthorize("hasRole('SHOP')")
     public Page<OrderResponse> searchOrders(
             String orderCode,
-            OrderStatus status,
+            String status,
             String address,
             LocalDateTime fromDate,
             LocalDateTime toDate,
             Pageable pageable
     ) {
+
+
         Page<Order> orderPage = orderRepository.searchOrders(
                 orderCode,
                 status,
@@ -253,6 +253,26 @@ public class OrderServiceImpl implements OrderService {
         );
         return orderPage.map(order -> {
             OrderResponse response = new OrderResponse();
+            List<OrderDetailProjection> projections = orderRepository.getOrderDetailsNative(order.getId());
+            List<OrderDetailResponse> orderDetails = projections.stream()
+                    .map(p -> OrderDetailResponse.builder()
+                            .orderId(p.getOrderPrimaryId())
+                            .orderCode(p.getOrderCode())
+                            .status(p.getStatus())
+                            .totalAmount(p.getTotalAmount())
+                            .shippingAddress(p.getShippingAddress())
+                            .orderDate(p.getOrderDate())
+                            .orderItemId(p.getOrderItemId())
+                            .quantity(p.getQuantity())
+                            .unitPrice(p.getUnitPrice())
+                            .totalPrice(p.getTotalPrice())
+                            .productName(p.getProductName())
+                            .variantId(p.getVariantId())
+                            .variantPrice(p.getPrice())
+                            .stockQuantity(p.getStockQuantity())
+                            .imageUrl(p.getImageUrl())
+                            .build())
+                    .toList();
             response.setId(order.getId());
             response.setOrderCode(order.getOrderCode());
             response.setUserId(order.getUser().getId());
@@ -262,6 +282,7 @@ public class OrderServiceImpl implements OrderService {
             response.setNote(order.getNote());
             response.setStatus(order.getStatus());
             response.setCreatedDate(order.getCreatedDate());
+            response.setOrderItems(orderDetails);
             return response;
         });
     }
@@ -275,7 +296,19 @@ public class OrderServiceImpl implements OrderService {
         if (!isCancelable) {
             throw new AppException(ErrorCode.CANNOT_CANCEL_ORDER);
         }
-
+        int orderId = order.getId();
+        ProductVariants variant ;
+        List<OrderItems> items = orderItemRepository.findByOrderIdQuery(orderId);
+        for (OrderItems item : items) {
+            variant = item.getProductVariant();
+            variant.setStockQuantity(
+                    variant.getStockQuantity() + item.getQuantity()
+            );
+            variant.setSoldQuantity(
+                    variant.getSoldQuantity() - item.getQuantity()
+            );
+            productVariantRepository.save(variant);
+        }
         order.setStatus(OrderStatus.CANCELLED.name());
         orderRepository.save(order);
         return "Hủy đơn hàng thành công";
@@ -295,7 +328,6 @@ public class OrderServiceImpl implements OrderService {
                         .totalAmount(p.getTotalAmount())
                         .shippingAddress(p.getShippingAddress())
                         .orderDate(p.getOrderDate())
-
                         .orderItemId(p.getOrderItemId())
                         .quantity(p.getQuantity())
                         .unitPrice(p.getUnitPrice())
@@ -310,6 +342,40 @@ public class OrderServiceImpl implements OrderService {
                         .imageUrl(p.getImageUrl())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+
+
+
+    @PreAuthorize("hasRole('SHOP')")
+    public UpdateOrderStatusResponse updateOrderStatus (UpdateOrderStatusRequest request) {
+
+        List<String> success = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
+
+        for (UpdateOrderStatusRequest.OrderUpdate orderUpdate : request.getOrderUpdateList() ){
+            try{
+                Order order = orderRepository.findByIdAndOrderCode(orderUpdate.getId(),orderUpdate.getOrderCode()).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+
+                OrderStatus currentStatus = OrderStatus.valueOf(order.getStatus());
+                OrderStatus newStatus = OrderStatus.valueOf(orderUpdate.getOrderStatus());
+
+                if (!OrderStatus.canTransition(currentStatus, newStatus)){
+                    throw new GlobalExceptionHandler.InvalidOrderStatusException(
+                            "Invalid transition: "
+                                    + currentStatus + " → " + newStatus
+                    );
+                }
+                order.setStatus(newStatus.name());
+                orderRepository.save(order);
+                success.add(orderUpdate.getOrderCode());
+            }catch (AppException e){
+                failed.add(orderUpdate.getOrderCode());
+            }catch (Exception e){
+                failed.add(orderUpdate.getOrderCode());
+            }
+        }
+        return new UpdateOrderStatusResponse(success,failed);
     }
 
 
@@ -346,6 +412,24 @@ public class OrderServiceImpl implements OrderService {
 //        orderRepository.save(order);
 //    }
 
+
+    public void updatePaymentMethod(Integer orderId, String method) {
+        Integer userId = userIdFromToken();
+        Order order = orderRepository.findByIdAndUserId(orderId, userId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        if ("cod".equals(method)) {
+            order.setPaymentMethod(PaymentMethod.COD.name());
+            order.setStatus(OrderStatus.PROCESSING.name());
+        } else if ("vnpay".equals(method)) {
+            order.setPaymentMethod(PaymentMethod.VNPAY.name());
+        } else {
+            throw new RuntimeException("Invalid payment method");
+        }
+
+        orderRepository.save(order);
+    }
+
+
     private Integer userIdFromToken(){
         Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
@@ -373,6 +457,18 @@ public class OrderServiceImpl implements OrderService {
 
         if (order.getPaymentExpiredAt().isBefore(LocalDateTime.now())) {
             order.setStatus(OrderStatus.CANCELLED.name());
+            ProductVariants variant =  new ProductVariants();
+            List<OrderItems> items = orderItemRepository.findByOrderIdQuery(order.getId());
+            for (OrderItems item : items) {
+                variant = item.getProductVariant();
+                variant.setStockQuantity(
+                        variant.getStockQuantity() + item.getQuantity()
+                );
+                variant.setSoldQuantity(
+                        variant.getSoldQuantity() - item.getQuantity()
+                );
+                productVariantRepository.save(variant);
+            }
             orderRepository.save(order);
         }
     }

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 
-public class AsyncEmailServiceImpl implements AsyncEmailService {
+public class  AsyncEmailServiceImpl implements AsyncEmailService {
 
     @Autowired
     private final EmailService emailService;

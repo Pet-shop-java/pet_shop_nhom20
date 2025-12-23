@@ -71,6 +71,119 @@ public class CommonUtil {
 			.replace("'", "&#39;");
 	}
 
-	// Mail khác viết ở dưới
+	// Mail đăng ký
+	public static String buildOtpEmailSubject(String purpose) {
+		return "Mã xác thực OTP - " + purpose;
+	}
+	public static String buildOtpEmailHtml(
+			String fullName,
+			String otp,
+			int expireMinutes,
+			String purpose
+	) {
+
+		String shopName = "Pet Shop";
+		String supportPhone = "+84 912 345 678";
+		String supportEmail = "support@petshop.vn";
+		String address = "123 Đường ABC, Thường Tín, TP.Hà Nội";
+		String logoUrl = "https://i.imgur.com/9z8ZQWl.png";
+
+		String safeName = fullName == null ? "Quý khách" : escapeHtml(fullName);
+
+		return "<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#1f2937\">" +
+
+				"<div style=\"display:flex;align-items:center;gap:12px;margin-bottom:12px\">" +
+				"<h2 style=\"color:#ffc107;margin:0\">" + shopName + "</h2>" +
+				"</div>" +
+
+				"<h3 style=\"color:#111827;margin:0 0 12px\">Mã xác thực OTP</h3>" +
+
+				"<p>Chào <strong>" + safeName + "</strong>,</p>" +
+
+				"<p>Bạn vừa yêu cầu <strong>" + escapeHtml(purpose) + "</strong> tại <strong>" + shopName + "</strong>.</p>" +
+
+				"<p>Mã xác thực của bạn là:</p>" +
+
+				"<div style=\"margin:16px 0;text-align:center\">" +
+				"<span style=\"" +
+				"display:inline-block;" +
+				"padding:12px 24px;" +
+				"font-size:24px;" +
+				"letter-spacing:4px;" +
+				"font-weight:bold;" +
+				"color:#111827;" +
+				"background:#f3f4f6;" +
+				"border:1px dashed #d1d5db;" +
+				"border-radius:8px" +
+				"\">" + escapeHtml(otp) + "</span>" +
+				"</div>" +
+
+				"<p>Mã OTP có hiệu lực trong <strong>" + expireMinutes + " phút</strong>.</p>" +
+
+				"<p style=\"color:#dc2626\"><strong>Lưu ý:</strong> Không chia sẻ mã này cho bất kỳ ai.</p>" +
+
+				"<p>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.</p>" +
+
+				"<div style=\"margin-top:20px;padding-top:12px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:13px\">" +
+				"<p style=\"margin:0\"><strong>" + shopName + "</strong></p>" +
+				"<p style=\"margin:0\">" + address + "</p>" +
+				"<p style=\"margin:0\">Hotline: " + supportPhone + " · Email: " + supportEmail + "</p>" +
+				"</div>" +
+
+				"</div>";
+	}
+	// Mail quên mật khẩu
+	public static String buildOtpForgotPasswordEmailSubject(String userFullName) {
+		return "Mã OTP xác thực tài khoản Pet Shop cho anh/chị " + userFullName;
+	}
+
+	public static String buildOtpForgotPasswordEmailHtml(
+			String userFullName,
+			String otp,
+			int expiredMinutes
+	) {
+
+		String shopName = "Pet Shop";
+		String supportPhone = "+84 912 345 678";
+		String supportEmail = "support@petshop.vn";
+		String address = "123 Đường ABC, Thường Tín, TP. Hà Nội";
+
+		return "<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#1f2937\">" +
+
+				"<h2 style=\"color:#ffc107;margin:0 0 12px\">" + shopName + "</h2>" +
+
+				"<h3 style=\"color:#111827;margin:0 0 12px\">Xác thực bằng mã OTP</h3>" +
+
+				"<p>Chào <strong>" + escapeHtml(userFullName) + "</strong>,</p>" +
+
+				"<p>Bạn đã yêu cầu xác thực bằng mã OTP. Vui lòng sử dụng mã dưới đây:</p>" +
+
+				"<div style=\"margin:16px 0;padding:16px;border:1px dashed #f59e0b;" +
+				"text-align:center;font-size:24px;font-weight:bold;letter-spacing:4px;color:#92400e\">" +
+				escapeHtml(otp) +
+				"</div>" +
+
+				"<table style=\"border-collapse:collapse;width:100%;max-width:560px\">" +
+				"<tbody>" +
+				row("Thời hạn OTP", expiredMinutes + " phút") +
+				"</tbody>" +
+				"</table>" +
+
+				"<p style=\"margin-top:16px\">" +
+				"Vui lòng <strong>không chia sẻ mã này cho bất kỳ ai</strong>. " +
+				"Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email." +
+				"</p>" +
+
+				"<div style=\"margin-top:20px;padding-top:12px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:13px\">" +
+				"<p style=\"margin:0\"><strong>" + shopName + "</strong></p>" +
+				"<p style=\"margin:0\">" + address + "</p>" +
+				"<p style=\"margin:0\">Hotline: " + supportPhone + " · Email: " + supportEmail + "</p>" +
+				"</div>" +
+
+				"</div>";
+	}
+
+
+
 
 }

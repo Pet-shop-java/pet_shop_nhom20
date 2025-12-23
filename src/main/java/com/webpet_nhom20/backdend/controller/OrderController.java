@@ -3,9 +3,11 @@ package com.webpet_nhom20.backdend.controller;
 
 import com.webpet_nhom20.backdend.dto.request.Order.CheckStockRequest;
 import com.webpet_nhom20.backdend.dto.request.Order.OrderRequest;
+import com.webpet_nhom20.backdend.dto.request.Order.UpdateOrderStatusRequest;
 import com.webpet_nhom20.backdend.dto.response.ApiResponse;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderDetailResponse;
 import com.webpet_nhom20.backdend.dto.response.Order.OrderResponse;
+import com.webpet_nhom20.backdend.dto.response.Order.UpdateOrderStatusResponse;
 import com.webpet_nhom20.backdend.enums.OrderStatus;
 import com.webpet_nhom20.backdend.service.OrderService;
 import jakarta.validation.Valid;
@@ -92,7 +94,7 @@ public class OrderController {
     @GetMapping("/admin/orders")
     public ApiResponse<Page<OrderResponse>> getOrders(
             @RequestParam(required = false) String orderCode,
-            @RequestParam(required = false) OrderStatus status,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String address,
             @RequestParam(required = false)
             @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -113,5 +115,24 @@ public class OrderController {
                 .result(response)
                 .build();
     }
-
+    @PutMapping("/update-status")
+    public ApiResponse<UpdateOrderStatusResponse> updateOrderStatus(
+            @Valid @RequestBody UpdateOrderStatusRequest request
+    ){
+        return ApiResponse.<UpdateOrderStatusResponse>builder()
+                .success(true)
+                .result(orderService.updateOrderStatus(request))
+                .build();
+    }
+    @PutMapping("/{orderId}/payment-method")
+    public ApiResponse<Void> updatePaymentMethod(
+            @PathVariable Integer orderId,
+            @RequestParam String method
+    ) {
+        orderService.updatePaymentMethod(orderId, method);
+        return ApiResponse.<Void>builder()
+                .success(true)
+                .message("Payment method updated successfully")
+                .build();
+    }
 }

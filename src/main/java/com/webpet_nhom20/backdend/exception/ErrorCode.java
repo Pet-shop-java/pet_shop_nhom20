@@ -155,8 +155,17 @@ public enum ErrorCode {
     //Booking Time (2300-2399)
     START_TIME_IS_NOT_NULL(2300,"Thời gian bắt đầu không được để để trống",HttpStatus.BAD_REQUEST),
     MAX_CAPACITY_IS_NOT_NULL(2301,"Sức chứa tối đa không được để trống",HttpStatus.BAD_REQUEST),
-    BOOKING_TIME_IS_NOT_EMPTY(2302,"Danh sách thời gian đặt lịch không được để trống",HttpStatus.BAD_REQUEST)
+    BOOKING_TIME_IS_NOT_EMPTY(2302,"Danh sách thời gian đặt lịch không được để trống",HttpStatus.BAD_REQUEST),
+    BOOKING_TIME_ID_NOT_NULL(2303,"ID thời gian đặt lịch không được để trống",HttpStatus.BAD_REQUEST),
+    APPOINTMENT_ALREADY_STARTED(2304,"Lịch hẹn đã bắt đầu, không thể xóa thời gian đặt lịch",HttpStatus.BAD_REQUEST),
+    CANCEL_TOO_LATE(2305,"Hủy lịch hẹn quá muộn, trước lịch hẹn 30 phút không thể hủy",HttpStatus.BAD_REQUEST),
+    UPDATE_TOO_LATE(2306,"Cập nhật lịch hẹn quá muộn, trước lịch hẹn 30 phút không thể cập nhật",HttpStatus.BAD_REQUEST),
+    BOOKING_TIME_NOT_FOUND(2307,"Thời gian đặt lịch không tồn tại",HttpStatus.BAD_REQUEST),
+    BOOKING_TOO_LATE(2308,"Đặt lịch quá muộn, phải đặt lịch trước thời gian bắt đầu 30 phút",HttpStatus.BAD_REQUEST),
+    SLOT_FULL(2309,"Khung giờ đã đầy",HttpStatus.BAD_REQUEST),
+    DATE_OUT_OF_RANGE(2310,"Ngày đặt lịch không hợp lệ, phải trong khoảng từ hôm nay đến 14 ngày tới",HttpStatus.BAD_REQUEST)
     ;
+
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
         this.code = code;

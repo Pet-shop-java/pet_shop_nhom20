@@ -46,7 +46,8 @@ public class SecurityConfig {
             "/api/v1/users/send-otp",
             "/api/v1/auth/send-otp",
             "/api/v1/auth/verify-otp",
-            "/api/v1/auth/change-password"
+            "/api/v1/auth/change-password",
+
 
 
 
@@ -56,7 +57,10 @@ public class SecurityConfig {
             "/api/v1/services/active",
             "/api/v1/products/**",
             "api/v1/payment/create-payment",
-            "/api/v1/payment/vnpay/return"
+            "/api/v1/payment/vnpay/return",
+            "/api/v1/pets",
+            "/api/v1/pets/animalsCustomer",
+            "/api/v1/pets/{petId}"
 
     };
 

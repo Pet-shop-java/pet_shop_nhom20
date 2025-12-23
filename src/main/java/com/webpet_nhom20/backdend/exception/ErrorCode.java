@@ -156,6 +156,11 @@ public enum ErrorCode {
     START_TIME_IS_NOT_NULL(2300,"Thời gian bắt đầu không được để để trống",HttpStatus.BAD_REQUEST),
     MAX_CAPACITY_IS_NOT_NULL(2301,"Sức chứa tối đa không được để trống",HttpStatus.BAD_REQUEST),
     BOOKING_TIME_IS_NOT_EMPTY(2302,"Danh sách thời gian đặt lịch không được để trống",HttpStatus.BAD_REQUEST)
+
+    //Pets(2400-2499)
+    ,PET_IS_EXISTED(2400,"Thú cưng đã tồn tại",HttpStatus.BAD_REQUEST)
+    ,PET_NOT_FOUND(2401,"Thú cưng không tồn tại",HttpStatus.NOT_FOUND)
+    ,PET_MUST_HAVE_IMAGE(2402,"Thú cưng phải có ít nhất một hình ảnh",HttpStatus.BAD_REQUEST)
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

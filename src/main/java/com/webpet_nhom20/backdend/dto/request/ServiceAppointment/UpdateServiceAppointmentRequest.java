@@ -26,11 +26,10 @@ public class UpdateServiceAppointmentRequest {
     private Integer id;
 
     /**
-     * ID dịch vụ thú cưng
-     * - Không được để trống
+     * ID booking time (đổi giờ + đổi service)
+     * - Optional
      */
-    @NotNull(message = "SERVICE_ID_NOT_NULL")
-    private Integer serviceId;
+    private Integer bookingTimeId;
 
     /**
      * Tên thú cưng
@@ -51,16 +50,7 @@ public class UpdateServiceAppointmentRequest {
     private String speciePet;
 
     /**
-     * Thời gian bắt đầu lịch hẹn
-     * - Không được để trống
-     * - Phải là thời gian trong tương lai
-     */
-    @NotNull(message = "APPOINTMENT_START_NOT_NULL")
-    @Future(message = "APPOINTMENT_START_NOT_FUTURE")
-    private LocalDateTime appoinmentStart;
-
-    /**
-     * Trạng thái lịch hẹn (tùy chọn)
+     * Trạng thái lịch hẹn (tùy chọn chỉ admin mới có thể cập nhật)
      */
     private AppoinmentStatus status;
 

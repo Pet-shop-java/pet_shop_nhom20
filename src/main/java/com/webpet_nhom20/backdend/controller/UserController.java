@@ -26,8 +26,8 @@ public class UserController {
     private OtpService otpService;
 
     @PostMapping("/send-otp")
-    public String sendOtp(@RequestParam String email) {
-        otpService.sendOtp(email);
+    public String sendOtp(@RequestBody @Valid UserCreationRequest request, @RequestParam String email) {
+        otpService.sendOtp(request, email);
         return "OTP đã được gửi về email";
     }
     @PostMapping()

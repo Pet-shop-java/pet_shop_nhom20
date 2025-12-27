@@ -2,6 +2,7 @@ package com.webpet_nhom20.backdend.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.Date;
+import java.util.Set;
 
 @Entity
 @Table(name = "pets")
@@ -48,6 +49,9 @@ public class Pets {
 
     @Column(name = "neutered")
     private String neutered;
+
+    @Column(name = "status")
+    private String status;
 
     @Column(name = "is_deleted", length = 1)
     String isDeleted = "0";

@@ -141,6 +141,7 @@ public class PetServiceImpl implements PetService {
                 .healthStatus(pet.getHealthStatus())
                 .vaccinated(pet.getVaccinated())
                 .neutered(pet.getNeutered())
+                .status(pet.getStatus())
                 .isDeleted("0")
                 .createdDate(pet.getCreatedDate())
                 .updatedDate(pet.getUpdatedDate())
@@ -163,12 +164,13 @@ public class PetServiceImpl implements PetService {
         return response;
     }
     @Override
-    public Page<PetResponse> getAllPets(String isDeleted, String animal, String size, String ageGroup, Pageable pageable) {
+    public Page<PetResponse> getAllPets(String isDeleted, String animal, String size, String ageGroup, Pageable pageable, String status) {
         // 1️⃣ Chuẩn hóa điều kiện filter
         boolean hasAnimal = animal != null && !animal.isBlank();
         boolean hasSize = size != null && !size.isBlank();
         boolean hasAgeGroup = ageGroup != null && !ageGroup.isBlank();
         boolean hasIsDeleted = isDeleted != null && !isDeleted.isBlank();
+        boolean hasStatus = status != null && !status.isBlank();
         // 2️⃣ Mapping SORT (camelCase → snake_case)
         List<Sort.Order> dbOrders = pageable.getSort().stream()
                 .map(order -> {
@@ -192,6 +194,7 @@ public class PetServiceImpl implements PetService {
                 hasAnimal ? animal : null,
                 hasSize ? size : null,
                 hasAgeGroup ? ageGroup : null,
+                hasStatus ? status : null,
                 hasIsDeleted ? isDeleted : null,
                 dbPageable
         );

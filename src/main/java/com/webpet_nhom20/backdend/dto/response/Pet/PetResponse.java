@@ -31,6 +31,7 @@ public class PetResponse {
     private String healthStatus;
     private String vaccinated;
     private String neutered;
+    private String status;
     String isDeleted ;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     Date createdDate;

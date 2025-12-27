@@ -161,6 +161,10 @@ public enum ErrorCode {
     ,PET_IS_EXISTED(2400,"Thú cưng đã tồn tại",HttpStatus.BAD_REQUEST)
     ,PET_NOT_FOUND(2401,"Thú cưng không tồn tại",HttpStatus.NOT_FOUND)
     ,PET_MUST_HAVE_IMAGE(2402,"Thú cưng phải có ít nhất một hình ảnh",HttpStatus.BAD_REQUEST)
+
+    //Adopt(2500-2599)
+    ,ADOPT_NOT_FOUND(2500,"Yêu cầu nhận nuôi không tồn tại",HttpStatus.NOT_FOUND)
+    ,CANNOT_CANCEL_ADOPT(2501,"Không thể hủy yêu cầu nhận nuôi này",HttpStatus.BAD_REQUEST)
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

@@ -13,7 +13,7 @@ import java.util.List;
 public interface PetService {
     PetResponse createPet(PetCreationRequest request);
     FullPetCreateResponse createFullPet(FullPetCreationRequest request);
-    Page<PetResponse> getAllPets(String isDeleted , String animal, String size, String ageGroup, Pageable pageable);
+    Page<PetResponse> getAllPets(String isDeleted , String animal, String size, String ageGroup, Pageable pageable, String status);
     List<String> getAnimalForCustomer();
     List<String> getAnimalForAdmin();
     void deletePet(int petId);

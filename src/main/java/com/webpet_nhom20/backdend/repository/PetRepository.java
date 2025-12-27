@@ -5,6 +5,7 @@ import com.webpet_nhom20.backdend.entity.Pets;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,12 +24,14 @@ public interface PetRepository extends JpaRepository<Pets, Integer> {
     WHERE (:animal IS NULL OR p.animal = :animal)
     AND (:size IS NULL OR p.size = :size)
     AND (:ageGroup IS NULL OR p.ageGroup = :ageGroup)
+    AND (:status IS NULL OR p.status = :status)
     AND (:isDelete IS NULL OR p.isDeleted = :isDelete)
     """)
     Page<Pets> findAllWithFilters(
             @Param("animal") String animal,
             @Param("size") String size,
             @Param("ageGroup") String ageGroup,
+            @Param("status") String status,
             @Param("isDelete") String isDelete,
             Pageable pageable
     );
@@ -42,4 +45,15 @@ public interface PetRepository extends JpaRepository<Pets, Integer> {
         select distinct animal from pets
     """, nativeQuery = true)
     List<String> getAnimalForAdmin();
+
+    @Modifying
+    @Query("""
+        UPDATE Pets p
+        SET p.status = :status
+        WHERE p.id = :petId
+    """)
+    void updateStatus(
+            @Param("petId") int petId,
+            @Param("status") String status
+    );
 }

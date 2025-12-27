@@ -24,8 +24,6 @@ public abstract class ServiceAppointmentMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "updatedDate", ignore = true)
-    @Mapping(source = "appointmentStart", target = "appointmentStart")
-    @Mapping(source = "serviceId", target = "service")
     @Mapping(source = "userId", target = "user")
     public abstract ServiceAppointments toEntity(ServiceAppointmentsRequest request);
 

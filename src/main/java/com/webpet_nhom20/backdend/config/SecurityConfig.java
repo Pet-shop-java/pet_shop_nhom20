@@ -47,7 +47,8 @@ public class SecurityConfig {
             "/api/v1/auth/send-otp",
             "/api/v1/auth/verify-otp",
             "/api/v1/auth/change-password",
-            "/api/v1/adopt"
+            "/api/v1/adopt",
+            "/api/v1/booking-times/available"
 
 
 

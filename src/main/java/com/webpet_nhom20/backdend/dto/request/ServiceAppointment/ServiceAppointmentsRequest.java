@@ -15,13 +15,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class ServiceAppointmentsRequest {
-    
+
     /**
      * ID dịch vụ thú cưng được đặt
      * - Không được để trống
      */
-    @NotNull(message = "SERVICE_ID_NOT_NULL")
-    private Integer serviceId;
+    @NotNull(message = "BOOKING_TIME_ID_NOT_NULL")
+    private Integer bookingTimeId;
 
     /**
      * ID người dùng đặt lịch
@@ -43,28 +43,12 @@ public class ServiceAppointmentsRequest {
      * Loài thú cưng
      * - Không được để trống
      * - Tối đa 100 ký tự
-     * 
+     *
      * Ví dụ: Chó, Mèo, Thỏ
      */
     @NotBlank(message = "SPECIE_PET_NOT_BLANK")
     @Size(max = 100, message = "SPECIE_PET_TOO_LONG")
     private String speciePet;
-
-    /**
-     * Thời gian bắt đầu lịch hẹn
-     * - Không được để trống
-     * - Phải là thời gian trong tương lai
-     */
-    @NotNull(message = "APPOINTMENT_START_NOT_NULL")
-    @Future(message = "APPOINTMENT_START_NOT_FUTURE")
-    private LocalDateTime appointmentStart;
-
-    /**
-     * Trạng thái lịch hẹn (tùy chọn)
-     * - Mặc định: SCHEDULED khi xử lý trong service
-     */
-    private AppoinmentStatus status;
-
     /**
      * Ghi chú thêm (tùy chọn)
      * - Tối đa 500 ký tự

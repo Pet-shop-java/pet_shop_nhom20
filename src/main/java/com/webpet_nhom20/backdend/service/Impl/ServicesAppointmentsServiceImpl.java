@@ -6,13 +6,16 @@ import com.webpet_nhom20.backdend.dto.request.ServiceAppointment.ServiceAppointm
 import com.webpet_nhom20.backdend.dto.request.ServiceAppointment.UpdateServiceAppointmentRequest;
 import com.webpet_nhom20.backdend.dto.request.ServiceAppointment.UserServiceAppointmentRequest;
 import com.webpet_nhom20.backdend.dto.response.ServiceAppointment.ServiceAppointmentsResponse;
+import com.webpet_nhom20.backdend.entity.BookingTime;
 import com.webpet_nhom20.backdend.entity.ServiceAppointments;
 import com.webpet_nhom20.backdend.entity.ServicesPet;
 import com.webpet_nhom20.backdend.common.CommonUtil;
+import com.webpet_nhom20.backdend.entity.User;
 import com.webpet_nhom20.backdend.enums.AppoinmentStatus;
 import com.webpet_nhom20.backdend.exception.AppException;
 import com.webpet_nhom20.backdend.exception.ErrorCode;
 import com.webpet_nhom20.backdend.mapper.ServiceAppointmentMapper;
+import com.webpet_nhom20.backdend.repository.BookingTimeRepository;
 import com.webpet_nhom20.backdend.repository.ServicesAppointmentsRepository;
 import com.webpet_nhom20.backdend.repository.ServicesPetRepository;
 import com.webpet_nhom20.backdend.repository.UserRepository;
@@ -22,7 +25,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 
 import java.time.LocalDateTime;
@@ -37,157 +42,253 @@ public class ServicesAppointmentsServiceImpl implements ServicesAppointmentsServ
     private final UserRepository userRepository;
     private final AsyncEmailService asyncEmailService;
     private final JwtTokenProvider jwtTokenProvider;
+    private final BookingTimeRepository bookingTimeRepository;
 
     @Override
-    public ServiceAppointmentsResponse create(ServiceAppointmentsRequest request) {
-        ServicesPet servicesPet = servicesPetRespository.findById(request.getServiceId())
-                .orElseThrow(() -> new RuntimeException("Service không tồn tại"));
+    @Transactional
+    public ServiceAppointmentsResponse create(
+            ServiceAppointmentsRequest request
+    ) {
 
-        ServiceAppointments appointment = serviceAppointmentMapper.toEntity(request);
-        LocalDateTime appointmentEnd = request.getAppointmentStart()
-                .plusMinutes(servicesPet.getDurationMinutes());
+        // 1. LOCK booking_time
+        BookingTime bookingTime =
+                bookingTimeRepository.findByIdForUpdate(
+                        request.getBookingTimeId()
+                ).orElseThrow(() ->
+                        new RuntimeException("BookingTime không tồn tại"));
 
-        appointment.setAppointmentEnd(appointmentEnd);
+        ServicesPet service = bookingTime.getService();
 
-        ServiceAppointments saved = servicesAppointmentsRepository.save(appointment);
+        // 2. Check rule: chỉ được đặt trước durationMinutes
+        LocalDateTime slotStart =
+                bookingTime.getSlotDate()
+                        .atTime(bookingTime.getStartTime());
+
+        // số phút phải đặt trước
+        int bookingCutoffMinutes = 30;
+
+        LocalDateTime cutoffTime =
+                slotStart.minusMinutes(bookingCutoffMinutes);
+
+        if (!LocalDateTime.now().isBefore(cutoffTime)) {
+            throw new RuntimeException(
+                    "Lịch đã đóng, lịch phải được đặt trước ít nhất "
+                            + bookingCutoffMinutes + " phút"
+            );
+        }
+        // 3. Check capacity
+        if (bookingTime.getAvailableCount() <= 0) {
+            throw new RuntimeException("Slot đã hết chỗ");
+        }
+
+        // 4. Load user
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() ->
+                        new RuntimeException("User không tồn tại"));
+
+        // 5. Map entity (mapper thủ công)
+        ServiceAppointments appointment =
+                mapToEntity(request, bookingTime, user);
+
+        // 6. Trừ slot
+        bookingTime.setBookedCount(
+                bookingTime.getBookedCount() + 1
+        );
+        // availableCount auto update bởi @PreUpdate
+
+        // 7. Save appointment
+        ServiceAppointments saved =
+                servicesAppointmentsRepository.save(appointment);
+
+        // 8. Gửi mail (GIỮ NGUYÊN)
         try {
-            userRepository.findById(saved.getUser().getId()).ifPresent(user -> {
-                String subject = CommonUtil.buildAppointmentEmailSubject(saved, user.getFullName(), user.getPhone());
-                String htmlBody = CommonUtil.buildAppointmentEmailHtml(saved, user.getFullName(), user.getPhone(), servicesPet.getTitle());
-                asyncEmailService.sendAppointmentEmail(user.getEmail(), subject, htmlBody);
-            });
-        } catch (Exception ex) {
-            // Không chặn luồng chính nếu gửi mail lỗi
-        }
-        ServiceAppointmentsResponse response = serviceAppointmentMapper.toResponse(saved);
+            String subject = CommonUtil.buildAppointmentEmailSubject(
+                    saved,
+                    user.getFullName(),
+                    user.getPhone()
+            );
 
-        response.setServiceName(servicesPet.getTitle());
+            String html = CommonUtil.buildAppointmentEmailHtml(
+                    saved,
+                    user.getFullName(),
+                    user.getPhone(),
+                    service.getTitle()
+            );
 
-        return response;
+            asyncEmailService.sendAppointmentEmail(
+                    user.getEmail(),
+                    subject,
+                    html
+            );
+        } catch (Exception ignored) {}
+
+        // 9 Response
+        return mapToResponse(saved);
     }
 
     @Override
-    public Page<ServiceAppointmentsResponse> getAppointmentsByRole(UserServiceAppointmentRequest request, Pageable pageable) {
+    public Page<ServiceAppointmentsResponse> getAppointmentsByRole(
+            UserServiceAppointmentRequest request,
+            Pageable pageable
+    ) {
+
         String role = request.getRoleName();
+        Page<ServiceAppointments> page;
 
-        if(role.equals("SHOP")){
-            return servicesAppointmentsRepository.findAllOrderByStatusAndStart(pageable)
-                    .map(entity -> {
-                        ServiceAppointmentsResponse response = serviceAppointmentMapper.toResponse(entity);
-                        servicesPetRespository.findById(entity.getService().getId())
-                                .ifPresent(sp -> response.setServiceName(sp.getTitle()));
-                        return response;
-                    });
-        }else if (role.equals("CUSTOMER")){
-            return servicesAppointmentsRepository.findByUserIdOrderByStatusAndStart(request.getUserId(), pageable)
-                    .map(entity -> {
-                        ServiceAppointmentsResponse response = serviceAppointmentMapper.toResponse(entity);
-                        servicesPetRespository.findById(entity.getService().getId())
-                                .ifPresent(sp -> response.setServiceName(sp.getTitle()));
-                        return response;
-                    });
+        if ("ADMIN".equals(role)) {
+
+            page = servicesAppointmentsRepository
+                    .findAllOrderByStatusAndNearest(pageable);
+
+        } else if ("CUSTOMER".equals(role)) {
+
+            page = servicesAppointmentsRepository
+                    .findByUserIdOrderByStatusAndNearest(
+                            request.getUserId(),
+                            pageable
+                    );
+
         } else {
-            throw new RuntimeException("Invalid role " + role );
+            throw new RuntimeException("Invalid role: " + role);
         }
+
+        return page.map(this::mapToResponse);
     }
 
     @Override
-    public ServiceAppointmentsResponse update(UpdateServiceAppointmentRequest request, String token) {
-        
-        // Validate JWT token và lấy thông tin user
-        Integer userIdFromToken = jwtTokenProvider.getUserId(token);
-        String roleFromToken = jwtTokenProvider.getUserRole(token);
-        
-        if (userIdFromToken == null || roleFromToken == null) {
+    @Transactional
+    public ServiceAppointmentsResponse update(
+            UpdateServiceAppointmentRequest request,
+            String token
+    ) {
+
+        Integer userId = jwtTokenProvider.getUserId(token);
+        String role = jwtTokenProvider.getUserRole(token);
+
+        if (userId == null || role == null) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
-        // Tìm appointment theo ID
-        ServiceAppointments existingAppointment = servicesAppointmentsRepository.findById(request.getId())
-                .orElseThrow(() -> new AppException(ErrorCode.APPOINTMENT_NOT_FOUND));
-        // Kiểm tra quyền truy cập
-        if (roleFromToken.equals("CUSTOMER")) {
-            // Customer chỉ có thể cập nhật appointment của chính họ
-            if (existingAppointment.getUser().getId() != userIdFromToken.longValue()) {
-                throw new AppException(ErrorCode.ACCESS_DENIED);
-            }
-            
-            // Customer không được phép cập nhật status
-            if (request.getStatus() != null) {
-                log.error("Customer {} trying to update status, which is not allowed", userIdFromToken);
+
+        ServiceAppointments appointment =
+                servicesAppointmentsRepository.findById(request.getId())
+                        .orElseThrow(() ->
+                                new AppException(ErrorCode.APPOINTMENT_NOT_FOUND));
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime updateDeadline =
+                appointment.getAppointmentStart().minusMinutes(30);
+
+        boolean isAfterDeadline = now.isAfter(updateDeadline);
+        boolean isAfterStart = now.isAfter(appointment.getAppointmentStart());
+
+        // ===== CHECK QUYỀN =====
+        if ("CUSTOMER".equals(role)) {
+
+            if (appointment.getUser().getId() != userId.intValue()) {
                 throw new AppException(ErrorCode.ACCESS_DENIED);
             }
 
-        } else if (!roleFromToken.equals("SHOP")) {
-            log.error("Invalid role: {}", roleFromToken);
+            if (isAfterDeadline) {
+                throw new AppException(ErrorCode.UPDATE_TOO_LATE);
+            }
+
+            if (request.getStatus() != null) {
+                throw new AppException(ErrorCode.ACCESS_DENIED);
+            }
+
+        } else if ("SHOP".equals(role)) {
+
+            if (isAfterStart && request.getBookingTimeId() != null) {
+                throw new AppException(
+                        ErrorCode.APPOINTMENT_ALREADY_STARTED
+                );
+            }
+
+        } else {
             throw new AppException(ErrorCode.ACCESS_DENIED);
         }
-        
-        // Validate service tồn tại nếu có thay đổi serviceId
-        if (request.getServiceId() != null && !request.getServiceId().equals(existingAppointment.getService().getId())) {
-            servicesPetRespository.findById(request.getServiceId())
-                    .orElseThrow(() -> new AppException(ErrorCode.SERVICE_NOT_FOUND));
+
+        // ===== UPDATE BOOKING TIME =====
+        if (request.getBookingTimeId() != null &&
+                !request.getBookingTimeId().equals(
+                        appointment.getBookingTime().getId())) {
+
+            // 1️⃣ LOCK slot cũ
+            BookingTime oldSlot =
+                    bookingTimeRepository.findByIdForUpdate(
+                                    appointment.getBookingTime().getId())
+                            .orElseThrow();
+
+            // 2️⃣ LOCK slot mới
+            BookingTime newSlot =
+                    bookingTimeRepository.findByIdForUpdate(
+                                    request.getBookingTimeId())
+                            .orElseThrow(() ->
+                                    new AppException(ErrorCode.BOOKING_TIME_NOT_FOUND));
+
+            ServicesPet service = newSlot.getService();
+
+            // 3️⃣ Validate giờ đặt (giống create)
+            LocalDateTime slotStart =
+                    newSlot.getSlotDate().atTime(newSlot.getStartTime());
+
+            LocalDateTime latestBookingTime =
+                    slotStart.minusMinutes(service.getDurationMinutes());
+
+            if (!now.isBefore(latestBookingTime)) {
+                throw new AppException(ErrorCode.BOOKING_TOO_LATE);
+            }
+
+            if (newSlot.getAvailableCount() <= 0) {
+                throw new AppException(ErrorCode.SLOT_FULL);
+            }
+
+            // 4️⃣ Trả slot cũ
+            oldSlot.setBookedCount(oldSlot.getBookedCount() - 1);
+
+            // 5️⃣ Trừ slot mới
+            newSlot.setBookedCount(newSlot.getBookedCount() + 1);
+
+            // 6️⃣ Update appointment
+            appointment.setBookingTime(newSlot);
+            appointment.setService(service);
+
+            appointment.setAppointmentStart(
+                    newSlot.getSlotDate().atTime(newSlot.getStartTime()));
+
+            appointment.setAppointmentEnd(
+                    newSlot.getSlotDate().atTime(newSlot.getEndTime()));
         }
-        // Cập nhật thông tin appointment
-        if (request.getNamePet() != null) {
-            existingAppointment.setNamePet(request.getNamePet());
-        }
-        
-        if (request.getSpeciePet() != null) {
-            existingAppointment.setSpeciePet(request.getSpeciePet());
-        }
-        
-        if (request.getAppoinmentStart() != null) {
-            existingAppointment.setAppointmentStart(request.getAppoinmentStart());
-            
-            // Cập nhật appointment_end nếu có thay đổi serviceId hoặc start time
-            int serviceId = request.getServiceId() != null ? request.getServiceId() : existingAppointment.getService().getId();
-            ServicesPet service = servicesPetRespository.findById(serviceId)
-                    .orElseThrow(() -> new AppException(ErrorCode.SERVICE_NOT_FOUND));
-            
-            LocalDateTime appointmentEnd = request.getAppoinmentStart()
-                    .plusMinutes(service.getDurationMinutes());
-            existingAppointment.setAppointmentEnd(appointmentEnd);
-        }
-        
-        if (request.getServiceId() != null && !request.getServiceId().equals(existingAppointment.getService().getId())) {
-            ServicesPet service = servicesPetRespository.findById(request.getServiceId())
-                    .orElseThrow(() -> new AppException(ErrorCode.SERVICE_NOT_FOUND));
-            existingAppointment.setService(service);
-            
-            // Cập nhật lại appointment_end khi service thay đổi
-            if (request.getAppoinmentStart() != null) {
-                
-                LocalDateTime appointmentEnd = request.getAppoinmentStart()
-                        .plusMinutes(service.getDurationMinutes());
-                existingAppointment.setAppointmentEnd(appointmentEnd);
+
+        // ===== UPDATE FIELD KHÁC =====
+        if (!isAfterStart) {
+            appointment.setNamePet(request.getNamePet());
+            appointment.setSpeciePet(request.getSpeciePet());
+
+            if (request.getNotes() != null) {
+                appointment.setNotes(request.getNotes());
             }
         }
-        
-        // Chỉ SHOP mới được cập nhật status
-        if (request.getStatus() != null && roleFromToken.equals("SHOP")) {
-            existingAppointment.setStatus(request.getStatus());
-            log.info("Status updated to: {}", request.getStatus());
+
+        // Shop update status
+        if ("SHOP".equals(role) && request.getStatus() != null) {
+            appointment.setStatus(request.getStatus());
         }
-        
-        if (request.getNotes() != null) {
-            existingAppointment.setNotes(request.getNotes());
-        }
-        
-        // Lưu appointment đã cập nhật
-        ServiceAppointments savedAppointment = servicesAppointmentsRepository.save(existingAppointment);
-        
-        // Tạo response
-        ServiceAppointmentsResponse response = serviceAppointmentMapper.toResponse(savedAppointment);
-        
-        // Lấy tên service để hiển thị trong response
-        servicesPetRespository.findById(savedAppointment.getService().getId())
-                .ifPresent(service -> response.setServiceName(service.getTitle()));
-        
-        return response;
+
+        ServiceAppointments saved =
+                servicesAppointmentsRepository.save(appointment);
+
+        return mapToResponse(saved);
     }
 
+
+
     @Override
-    public ServiceAppointmentsResponse cancel(CancelServiceAppointmentRequest request, String token) {
+    @Transactional
+    public ServiceAppointmentsResponse cancel(
+            CancelServiceAppointmentRequest request,
+            String token
+    ) {
 
         // 1️⃣ Xác thực token
         Integer userIdFromToken = jwtTokenProvider.getUserId(token);
@@ -195,30 +296,109 @@ public class ServicesAppointmentsServiceImpl implements ServicesAppointmentsServ
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        // 2️⃣ Lấy appointment từ DB
-        ServiceAppointments existingAppointment = servicesAppointmentsRepository.findById(request.getId())
-                .orElseThrow(() -> new AppException(ErrorCode.APPOINTMENT_NOT_FOUND));
+        // 2️⃣ Lấy appointment
+        ServiceAppointments existingAppointment =
+                servicesAppointmentsRepository.findById(request.getId())
+                        .orElseThrow(() ->
+                                new AppException(ErrorCode.APPOINTMENT_NOT_FOUND));
+
+        // 3️⃣ Check đúng chủ lịch
         if(existingAppointment.getUser().getId() != userIdFromToken.longValue()){
-            throw new AppException(ErrorCode.UNAUTHENTICATED_CANCEL);
-        }
-        // 3️⃣ Kiểm tra nếu đã bị hủy trước đó
+            throw new AppException(ErrorCode.UNAUTHENTICATED_CANCEL); }
+
+        // 4️⃣ Không cho hủy nếu đã COMPLETED / CANCELED
         if (existingAppointment.getStatus() == AppoinmentStatus.CANCELED) {
             throw new AppException(ErrorCode.ALREADY_CANCELED);
         }
+
         if (existingAppointment.getStatus() == AppoinmentStatus.COMPLETED) {
             throw new AppException(ErrorCode.ALREADY_COMPLETED);
         }
 
+        // 5️⃣ ❗ Check thời gian: đã quá giờ bắt đầu thì không cho hủy
+        // hủy trước 30 phút
+        if (LocalDateTime.now()
+                .isAfter(existingAppointment
+                        .getAppointmentStart()
+                        .minusMinutes(30))) {
+            throw new AppException(ErrorCode.CANCEL_TOO_LATE);
+        }
 
-        // 4️⃣ Cập nhật trạng thái "CANCELED"
+        // 6️⃣ Update status
         existingAppointment.setStatus(AppoinmentStatus.CANCELED);
-        existingAppointment.setNotes("Cuộc hẹn đã bị hủy lúc " + LocalDateTime.now());
+        existingAppointment.setNotes(
+                "Cuộc hẹn đã bị hủy lúc " + LocalDateTime.now()
+        );
 
-        // 5️⃣ Lưu lại vào DB
-        ServiceAppointments canceledAppointment = servicesAppointmentsRepository.save(existingAppointment);
+        // 7️⃣ Hoàn slot (rất quan trọng)
+        BookingTime bookingTime = existingAppointment.getBookingTime();
+        bookingTime.setBookedCount(
+                bookingTime.getBookedCount() - 1
+        );
+        // availableCount tự update bởi @PreUpdate
 
-        // 6️⃣ Mapping sang response
-        return serviceAppointmentMapper.toResponse(canceledAppointment);
+        // 8️⃣ Save
+        ServiceAppointments canceledAppointment =
+                servicesAppointmentsRepository.save(existingAppointment);
+
+        // 9️⃣ Mapper thủ công
+        return mapToResponse(canceledAppointment);
     }
 
+    private ServiceAppointments mapToEntity(
+            ServiceAppointmentsRequest request,
+            BookingTime bookingTime,
+            User user
+    ) {
+
+        ServiceAppointments a = new ServiceAppointments();
+
+        a.setService(bookingTime.getService());
+        a.setBookingTime(bookingTime);
+        a.setUser(user);
+
+        a.setNamePet(request.getNamePet());
+        a.setSpeciePet(request.getSpeciePet());
+
+        LocalDateTime start =
+                bookingTime.getSlotDate()
+                        .atTime(bookingTime.getStartTime());
+
+        LocalDateTime end =
+                bookingTime.getSlotDate()
+                        .atTime(bookingTime.getEndTime());
+
+        a.setAppointmentStart(start);
+        a.setAppointmentEnd(end);
+
+        a.setStatus(AppoinmentStatus.SCHEDULED);
+        a.setNotes(request.getNotes());
+
+        return a;
+    }
+
+    private ServiceAppointmentsResponse mapToResponse(
+            ServiceAppointments a
+    ) {
+
+        ServiceAppointmentsResponse r =
+                new ServiceAppointmentsResponse();
+
+        r.setId(a.getId());
+        r.setServiceId(a.getService().getId());
+        r.setServiceName(a.getService().getTitle());
+        r.setBookingTimeId(a.getBookingTime().getId());
+        r.setUserId(a.getUser().getId());
+        r.setNamePet(a.getNamePet());
+        r.setSpeciePet(a.getSpeciePet());
+        r.setAppointmentStart(a.getAppointmentStart());
+        r.setAppointmentEnd(a.getAppointmentEnd());
+        r.setStatus(a.getStatus());
+        r.setNotes(a.getNotes());
+        r.setCreatedDate(a.getCreatedDate());
+        r.setUpdatedDate(a.getUpdatedDate());
+
+        return r;
+    }
 }
+

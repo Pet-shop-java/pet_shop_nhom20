@@ -3,6 +3,7 @@ package com.webpet_nhom20.backdend.dto.response.ServicePet;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.webpet_nhom20.backdend.dto.response.BookingTime.BookingTimeResponse;
+import com.webpet_nhom20.backdend.dto.response.BookingTime.ServiceTimeTemplateResponse;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -32,4 +33,6 @@ public class ServicesPetResponse {
     LocalDateTime createdDate;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     LocalDateTime updatedDate;
+
+    List<ServiceTimeTemplateResponse> timeTemplates;
 }

@@ -48,6 +48,9 @@ public class BookingTime {
     @Column(name = "is_active", length = 1)
     String isActive = "1";
 
+    @Column(name = "is_deleted", length = 1)
+    String isDeleted = "0";
+
     @Column(name = "create_date", updatable = false)
     LocalDateTime createDate;
 

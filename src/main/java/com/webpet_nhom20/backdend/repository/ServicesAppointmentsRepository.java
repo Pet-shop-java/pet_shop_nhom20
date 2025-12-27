@@ -58,5 +58,17 @@ public interface ServicesAppointmentsRepository extends JpaRepository<ServiceApp
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+
+    /**
+     * Lấy toàn bộ appointment theo booking_time
+     */
+    @Query("""
+        SELECT sa
+        FROM ServiceAppointments sa
+        WHERE sa.bookingTime.id = :bookingTimeId
+    """)
+    List<ServiceAppointments> findByBookingTimeId(
+            @Param("bookingTimeId") int bookingTimeId
+    );
 }
 

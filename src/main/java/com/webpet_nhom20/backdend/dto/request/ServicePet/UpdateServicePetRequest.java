@@ -1,10 +1,13 @@
 package com.webpet_nhom20.backdend.dto.request.ServicePet;
 
+import com.webpet_nhom20.backdend.dto.request.BookingTime.UpdateBookingTimeRequest;
+import jakarta.validation.Valid;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -54,4 +57,7 @@ public class UpdateServicePetRequest {
      */
     @Pattern(regexp = "^[01]?$", message = "IS_ACTIVE_INVALID")
     String isActive;
+
+    @Valid
+    List<UpdateBookingTimeRequest> bookingTimeUpdates;
 }

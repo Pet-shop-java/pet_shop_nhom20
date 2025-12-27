@@ -2,22 +2,24 @@ package com.webpet_nhom20.backdend.dto.request.BookingTime;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
-public class BookingTimeRequest {
+public class AddBookingTimeRequest {
+
+    @NotNull
+    private Integer serviceId;
 
     @NotNull(message = "START_TIME_IS_NOT_NULL")
-    LocalTime startTime;
+    private LocalTime startTime;
 
     @NotNull(message = "MAX_CAPACITY_IS_NOT_NULL")
     @Positive(message = "MAX_CAPACITY_MUST_BE_POSITIVE")
-    Integer maxCapacity;
+    private Integer maxCapacity;
 }

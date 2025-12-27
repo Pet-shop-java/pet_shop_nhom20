@@ -163,7 +163,11 @@ public enum ErrorCode {
     BOOKING_TIME_NOT_FOUND(2307,"Thời gian đặt lịch không tồn tại",HttpStatus.BAD_REQUEST),
     BOOKING_TOO_LATE(2308,"Đặt lịch quá muộn, phải đặt lịch trước thời gian bắt đầu 30 phút",HttpStatus.BAD_REQUEST),
     SLOT_FULL(2309,"Khung giờ đã đầy",HttpStatus.BAD_REQUEST),
-    DATE_OUT_OF_RANGE(2310,"Ngày đặt lịch không hợp lệ, phải trong khoảng từ hôm nay đến 14 ngày tới",HttpStatus.BAD_REQUEST)
+    DATE_OUT_OF_RANGE(2310,"Ngày đặt lịch không hợp lệ, phải trong khoảng từ hôm nay đến 14 ngày tới",HttpStatus.BAD_REQUEST),
+    OLD_TIME_NOT_NULL(2311,"Thời gian cũ không được để trống",HttpStatus.BAD_REQUEST),
+    NEW_TIME_NOT_NULL(2312,"Thời gian mới không được để trống",HttpStatus.BAD_REQUEST),
+    MAX_CAPACITY_MUST_BE_POSITIVE(2313,"Sức chứa tối đa phải là số dương",HttpStatus.BAD_REQUEST),
+    BOOKING_TIME_ALREADY_EXISTS(2314,"Thời gian đặt lịch đã tồn tại",HttpStatus.BAD_REQUEST)
     ;
 
 

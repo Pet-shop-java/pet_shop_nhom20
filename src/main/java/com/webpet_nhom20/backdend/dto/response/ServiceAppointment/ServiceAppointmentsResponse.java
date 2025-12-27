@@ -9,9 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 @Data
 @NoArgsConstructor
@@ -20,32 +18,19 @@ import java.time.LocalTime;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ServiceAppointmentsResponse {
     private int id;
-    /* ===== SERVICE ===== */
     private int serviceId;
     private String serviceName;
-    /* ===== BOOKING SLOT ===== */
-    private int bookingTimeId;
-    private LocalDate slotDate;
-    private LocalTime startTime;
-    private LocalTime endTime;
-    /* ===== USER ===== */
     private int userId;
-    /* ===== PET INFO ===== */
     private String namePet;
     private String speciePet;
-    /* ===== APPOINTMENT TIME (SNAPSHOT) ===== */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime appointmentStart;
-
+    private LocalDateTime appoinmentStart;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime appointmentEnd;
-
+    private LocalDateTime appoinmentEnd;
     private AppoinmentStatus status;
     private String notes;
-
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdDate;
-
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedDate;
 }

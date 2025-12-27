@@ -43,12 +43,12 @@ public class SecurityConfig {
             "/api/v1/auth/refresh-token",
             "/api/v1/auth/logout",
             "/api/v1/payment/vnpay/ipn",
-            "/api/v1/booking-times/available",
-            "/api/v1/payment/vnpay/ipn",
             "/api/v1/users/send-otp",
             "/api/v1/auth/send-otp",
             "/api/v1/auth/verify-otp",
-            "/api/v1/auth/change-password"
+            "/api/v1/auth/change-password",
+            "/api/v1/adopt"
+
 
 
 
@@ -58,7 +58,10 @@ public class SecurityConfig {
             "/api/v1/services/active",
             "/api/v1/products/**",
             "api/v1/payment/create-payment",
-            "/api/v1/payment/vnpay/return"
+            "/api/v1/payment/vnpay/return",
+            "/api/v1/pets",
+            "/api/v1/pets/animalsCustomer",
+            "/api/v1/pets/{petId}"
 
     };
 

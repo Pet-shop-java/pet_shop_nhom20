@@ -1,7 +1,10 @@
 package com.webpet_nhom20.backdend.service.Impl;
 
 import com.webpet_nhom20.backdend.common.CommonUtil;
+import com.webpet_nhom20.backdend.dto.request.User.UserCreationRequest;
 import com.webpet_nhom20.backdend.entity.EmailOtp;
+import com.webpet_nhom20.backdend.exception.AppException;
+import com.webpet_nhom20.backdend.exception.ErrorCode;
 import com.webpet_nhom20.backdend.repository.EmailOtpRepository;
 import com.webpet_nhom20.backdend.repository.UserRepository;
 import com.webpet_nhom20.backdend.service.AsyncEmailService;
@@ -25,11 +28,16 @@ public class OtpServiceImpl implements OtpService {
     // Gửi OTP
     @Transactional
     @Override
-    public void sendOtp(String email) {
+    public void sendOtp(UserCreationRequest request, String email) {
 
-        // 1. Check email đã tồn tại chưa
-        if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Email đã được đăng ký");
+        if(userRepository.existsByUsername(request.getUsername())){
+            throw new AppException(ErrorCode.USER_EXISTED);
+        }
+        if(userRepository.existsByEmail(request.getEmail())){
+            throw new AppException(ErrorCode.EMAIL_EXISTED);
+        }
+        if(userRepository.existsByPhone(request.getPhone())){
+            throw new AppException(ErrorCode.PHONE_EXISTED);
         }
 
         // 2. Xóa OTP cũ nếu có

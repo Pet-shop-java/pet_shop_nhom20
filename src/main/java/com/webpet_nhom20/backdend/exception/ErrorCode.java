@@ -167,9 +167,17 @@ public enum ErrorCode {
     OLD_TIME_NOT_NULL(2311,"Thời gian cũ không được để trống",HttpStatus.BAD_REQUEST),
     NEW_TIME_NOT_NULL(2312,"Thời gian mới không được để trống",HttpStatus.BAD_REQUEST),
     MAX_CAPACITY_MUST_BE_POSITIVE(2313,"Sức chứa tối đa phải là số dương",HttpStatus.BAD_REQUEST),
-    BOOKING_TIME_ALREADY_EXISTS(2314,"Thời gian đặt lịch đã tồn tại",HttpStatus.BAD_REQUEST)
-    ;
+    BOOKING_TIME_ALREADY_EXISTS(2314,"Thời gian đặt lịch đã tồn tại",HttpStatus.BAD_REQUEST),
 
+    //Pets(2400-2499)
+    PET_IS_EXISTED(2400,"Thú cưng đã tồn tại",HttpStatus.BAD_REQUEST),
+    PET_NOT_FOUND(2401,"Thú cưng không tồn tại",HttpStatus.NOT_FOUND),
+    PET_MUST_HAVE_IMAGE(2402,"Thú cưng phải có ít nhất một hình ảnh",HttpStatus.BAD_REQUEST),
+
+    //Adopt(2500-2599)
+    ADOPT_NOT_FOUND(2500,"Yêu cầu nhận nuôi không tồn tại",HttpStatus.NOT_FOUND),
+    CANNOT_CANCEL_ADOPT(2501,"Không thể hủy yêu cầu nhận nuôi này",HttpStatus.BAD_REQUEST)
+    ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
         this.code = code;

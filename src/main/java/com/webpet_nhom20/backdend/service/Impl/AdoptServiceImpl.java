@@ -62,7 +62,7 @@ public class AdoptServiceImpl implements AdoptService {
                 );
 
         if (exists) {
-            throw new RuntimeException("Bạn đã gửi yêu cầu nhận nuôi pet này");
+            throw new RuntimeException("Pet này đã có trong đơn nhận nuôi của bạn");
         }
 
         // 5️⃣ Tạo adopt
@@ -226,10 +226,10 @@ public class AdoptServiceImpl implements AdoptService {
             Pets pet = petRepository.findById(adopt.getPetId())
                     .orElseThrow(() -> new RuntimeException("Pet không tồn tại"));
             pet.setStatus(PetStatus.ADOPTED.name());
+            pet.setIsDeleted("1");
             petRepository.save(pet);
         }
 
-        recalculatePetStatus(adopt.getPetId());
 
         return AdoptResponse.builder()
                 .id(adopt.getId())

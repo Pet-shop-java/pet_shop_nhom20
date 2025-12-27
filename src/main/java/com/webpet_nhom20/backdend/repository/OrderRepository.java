@@ -32,6 +32,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             o.order_code AS orderCode,
             o.status AS status,
             o.total_amount AS totalAmount,
+            o.shipping_amount AS shippingAmount,
             o.shipping_address AS shippingAddress,
             o.created_date AS orderDate,
 

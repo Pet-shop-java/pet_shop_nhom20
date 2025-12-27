@@ -170,9 +170,10 @@ public enum ErrorCode {
     BOOKING_TIME_ALREADY_EXISTS(2314,"Thời gian đặt lịch đã tồn tại",HttpStatus.BAD_REQUEST),
 
     //Pets(2400-2499)
-    PET_IS_EXISTED(2400,"Thú cưng đã tồn tại",HttpStatus.BAD_REQUEST),
-    PET_NOT_FOUND(2401,"Thú cưng không tồn tại",HttpStatus.NOT_FOUND),
-    PET_MUST_HAVE_IMAGE(2402,"Thú cưng phải có ít nhất một hình ảnh",HttpStatus.BAD_REQUEST),
+    PET_IS_EXISTED(2400,"Thú cưng đã tồn tại",HttpStatus.BAD_REQUEST)
+    ,PET_NOT_FOUND(2401,"Thú cưng không tồn tại",HttpStatus.NOT_FOUND)
+    ,PET_MUST_HAVE_IMAGE(2402,"Thú cưng phải có ít nhất một hình ảnh",HttpStatus.BAD_REQUEST),
+    CANNOT_RESTORE_PET_ADOPTED(2403,"Không thể khôi phục thú cưng đã được nhận nuôi",HttpStatus.BAD_REQUEST),
 
     //Adopt(2500-2599)
     ADOPT_NOT_FOUND(2500,"Yêu cầu nhận nuôi không tồn tại",HttpStatus.NOT_FOUND),

@@ -90,4 +90,12 @@ public class PetController {
                 .result(petService.updatePet(petId, request))
                 .build();
     }
+    @PutMapping("/restore/{petId}")
+    public ApiResponse<Void> restorePet(@PathVariable int petId) {
+        petService.restorePet(petId);
+        return ApiResponse.<Void>builder()
+                .success(true)
+                .message("Khôi phục thú cưng thành công")
+                .build();
+    }
 }

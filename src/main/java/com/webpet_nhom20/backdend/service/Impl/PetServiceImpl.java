@@ -12,6 +12,7 @@ import com.webpet_nhom20.backdend.dto.response.Product.FullProductCreateResponse
 import com.webpet_nhom20.backdend.dto.response.Product.ProductResponse;
 import com.webpet_nhom20.backdend.dto.response.ProductImage.ProductImageResponse;
 import com.webpet_nhom20.backdend.entity.*;
+import com.webpet_nhom20.backdend.enums.PetStatus;
 import com.webpet_nhom20.backdend.exception.AppException;
 import com.webpet_nhom20.backdend.repository.PetImageRepository;
 import com.webpet_nhom20.backdend.repository.PetRepository;
@@ -142,7 +143,7 @@ public class PetServiceImpl implements PetService {
                 .vaccinated(pet.getVaccinated())
                 .neutered(pet.getNeutered())
                 .status(pet.getStatus())
-                .isDeleted("0")
+                .isDeleted(pet.getIsDeleted())
                 .createdDate(pet.getCreatedDate())
                 .updatedDate(pet.getUpdatedDate())
                 .build();
@@ -225,6 +226,17 @@ public class PetServiceImpl implements PetService {
         petRepository.save(pet);
     }
     @Override
+    public void restorePet(int petId) {
+        Pets pet = petRepository.findById(petId)
+                .orElseThrow(() -> new AppException(ErrorCode.PET_NOT_FOUND));
+        if("ADOPTED".equals(pet.getStatus())){
+            throw new AppException(ErrorCode.CANNOT_RESTORE_PET_ADOPTED);
+        }
+        pet.setIsDeleted("0");
+        pet.setUpdatedDate(java.sql.Timestamp.valueOf(LocalDateTime.now()));
+        petRepository.save(pet);
+    }
+    @Override
     public PetResponse getPetById(int petId) {
         Pets pet = petRepository.findById(petId)
                 .orElseThrow(() -> new AppException(ErrorCode.PET_NOT_FOUND));
@@ -234,6 +246,9 @@ public class PetServiceImpl implements PetService {
     @PreAuthorize("hasRole('SHOP')")
     @Transactional
     public PetResponse updatePet(int petId, PetUpdateRequest request) {
+        if(petRepository.existsByName(request.getName())){
+            throw new AppException(ErrorCode.PET_IS_EXISTED);
+        }
         Pets pet = petRepository.findById(petId)
                 .orElseThrow(() -> new AppException(ErrorCode.PET_NOT_FOUND));
         pet.setName(request.getName());

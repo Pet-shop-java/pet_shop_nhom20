@@ -326,6 +326,7 @@ public class OrderServiceImpl implements OrderService {
                         .orderCode(p.getOrderCode())
                         .status(p.getStatus())
                         .totalAmount(p.getTotalAmount())
+                        .shippingAmount(p.getShippingAmount())
                         .shippingAddress(p.getShippingAddress())
                         .orderDate(p.getOrderDate())
                         .orderItemId(p.getOrderItemId())

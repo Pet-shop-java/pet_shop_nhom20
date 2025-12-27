@@ -15,6 +15,7 @@ public class OrderDetailResponse {
     private Integer orderId;
     private String orderCode;
     private String status;
+    private BigDecimal shippingAmount;
     private BigDecimal totalAmount;
     private String shippingAddress;
     private Date orderDate;

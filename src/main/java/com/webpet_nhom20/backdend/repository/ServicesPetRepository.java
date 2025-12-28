@@ -38,5 +38,6 @@ public interface ServicesPetRepository extends JpaRepository<ServicesPet,Integer
             @Param("keyword") String keyword,
             Pageable pageable
     );
-
+    boolean existsByTitle(String title);
+    boolean existsByTitleAndIdNot(String title, Integer id);
 }

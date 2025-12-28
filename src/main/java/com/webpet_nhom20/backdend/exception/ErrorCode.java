@@ -109,6 +109,7 @@ public enum ErrorCode {
     SERVICE_PET_NOT_FOUND(1805, "Dịch vụ không tồn tại", HttpStatus.NOT_FOUND),
     SERVICE_NOT_FOUND(1806, "Dịch vụ không tồn tại", HttpStatus.NOT_FOUND),
     SERVICE_ID_NOT_NULL(1807, "ID dịch vụ không được để trống", HttpStatus.BAD_REQUEST),
+    SERVICE_TITLE_ALREADY_EXISTS(1814, "Tiêu đề dịch vụ đã tồn tại", HttpStatus.BAD_REQUEST),
 
     // Validation mới cho Service Pet
     SERVICE_NAME_SIZE_INVALID(1808, "Tên dịch vụ phải từ 1-255 ký tự", HttpStatus.BAD_REQUEST),

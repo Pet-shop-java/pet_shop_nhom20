@@ -6,6 +6,7 @@ import com.webpet_nhom20.backdend.dto.request.ServicePet.CreateServicePetRequest
 import com.webpet_nhom20.backdend.dto.request.ServicePet.UpdateServicePetRequest;
 import com.webpet_nhom20.backdend.dto.response.BookingTime.BookingTimeResponse;
 import com.webpet_nhom20.backdend.dto.response.BookingTime.ServiceTimeTemplateResponse;
+import com.webpet_nhom20.backdend.dto.response.ServicePet.CheckNameResponse;
 import com.webpet_nhom20.backdend.dto.response.ServicePet.ServicesPetResponse;
 import com.webpet_nhom20.backdend.entity.BookingTime;
 import com.webpet_nhom20.backdend.entity.ServiceAppointments;
@@ -90,6 +91,24 @@ public class ServicesPetServiceImpl implements ServicesPetService {
     }
 
     @Override
+    public CheckNameResponse checkServiceTitle(String title) {
+
+        boolean exists = servicesPetRepository.existsByTitle(title);
+
+        if (exists) {
+            return new CheckNameResponse(
+                    false,
+                    "Tên dịch vụ đã tồn tại"
+            );
+        }
+
+        return new CheckNameResponse(
+                true,
+                "Tên dịch vụ hợp lệ"
+        );
+    }
+
+    @Override
     public List<ServicesPetResponse> getActiveServices() {
         return servicesPetRepository.findByIsActive("1")
                 .stream()
@@ -100,6 +119,14 @@ public class ServicesPetServiceImpl implements ServicesPetService {
     @Transactional
     @Override
     public ServicesPetResponse createServicesPet(CreateServicePetRequest request){
+
+        boolean titleExists =
+                servicesPetRepository.existsByTitle(request.getTitle());
+
+        if (titleExists) {
+            throw new AppException(ErrorCode.SERVICE_TITLE_ALREADY_EXISTS);
+        }
+
         //Save service
         ServicesPet service = new ServicesPet();
         service.setName(request.getName());
@@ -156,13 +183,38 @@ public class ServicesPetServiceImpl implements ServicesPetService {
         ServicesPet service = servicesPetRepository.findById(servicePetId)
                 .orElseThrow(() -> new AppException(ErrorCode.SERVICE_NOT_FOUND));
 
-        // 2️⃣ Update thông tin service
+        if (request.getTitle() != null) {
+
+            boolean titleExists =
+                    servicesPetRepository.existsByTitleAndIdNot(
+                            request.getTitle(),
+                            servicePetId
+                    );
+
+            if (titleExists) {
+                throw new AppException(ErrorCode.SERVICE_TITLE_ALREADY_EXISTS);
+            }
+        }
+
+        // 2️⃣ Detect duration change
+        Integer oldDuration = service.getDurationMinutes();
+
+        // 3️⃣ Update service info
         servicesPetMapper.updateServicePet(service, request);
         servicesPetRepository.save(service);
 
-        // 3️⃣ Không update time → trả service + timeTemplates
+        boolean durationChanged =
+                request.getDurationMinutes() != null
+                        && !request.getDurationMinutes().equals(oldDuration);
+
+        // 4️⃣ Không update booking time
         if (request.getBookingTimeUpdates() == null
                 || request.getBookingTimeUpdates().isEmpty()) {
+
+            // Nếu chỉ đổi duration → update toàn bộ endTime
+            if (durationChanged) {
+                updateEndTimeForAllActiveSlots(service);
+            }
 
             List<BookingTime> activeTimes =
                     bookingTimeRepository.findByService_IdAndIsActive(
@@ -172,14 +224,14 @@ public class ServicesPetServiceImpl implements ServicesPetService {
             return mapServiceWithTimeTemplates(service, activeTimes);
         }
 
-        // 4️⃣ Update booking time
+        // 5️⃣ Update booking times
         for (UpdateBookingTimeRequest btReq : request.getBookingTimeUpdates()) {
 
             LocalTime oldTime = btReq.getOldTime();
-            LocalTime newTime = btReq.getNewTime();           // có thể null
-            Integer newMaxCapacity = btReq.getMaxCapacity(); // có thể null
+            LocalTime newTime = btReq.getNewTime();           // nullable
+            Integer newMaxCapacity = btReq.getMaxCapacity(); // nullable
 
-            // 4.1 Lấy toàn bộ slot ACTIVE theo oldTime
+            // 5.1 Lấy toàn bộ slot ACTIVE theo oldTime
             List<BookingTime> slots =
                     bookingTimeRepository.findByService_IdAndStartTimeAndIsActive(
                             servicePetId,
@@ -193,15 +245,16 @@ public class ServicesPetServiceImpl implements ServicesPetService {
 
             for (BookingTime slot : slots) {
 
-                // 4.2 Nếu có đổi giờ → check trùng trong cùng ngày
+                // 5.2 Check trùng giờ nếu có đổi giờ
                 if (newTime != null && !newTime.equals(oldTime)) {
 
                     boolean exists =
-                            bookingTimeRepository.existsByService_IdAndSlotDateAndStartTimeAndIsActiveTrue(
-                                    servicePetId,
-                                    slot.getSlotDate(),
-                                    newTime
-                            );
+                            bookingTimeRepository
+                                    .existsByService_IdAndSlotDateAndStartTimeAndIsActiveTrue(
+                                            servicePetId,
+                                            slot.getSlotDate(),
+                                            newTime
+                                    );
 
                     if (exists) {
                         throw new AppException(ErrorCode.BOOKING_TIME_ALREADY_EXISTS);
@@ -213,19 +266,21 @@ public class ServicesPetServiceImpl implements ServicesPetService {
 
                 boolean hasBooking = !appointments.isEmpty();
 
-                // 5️⃣ CHƯA CÓ BOOK → update trực tiếp
+                // 6️⃣ CHƯA CÓ BOOK → update trực tiếp
                 if (!hasBooking) {
 
                     if (newTime != null) {
                         slot.setStartTime(newTime);
-                        slot.setEndTime(
-                                newTime.plusMinutes(service.getDurationMinutes())
-                        );
                     }
 
                     if (newMaxCapacity != null) {
                         slot.setMaxCapacity(newMaxCapacity);
                     }
+
+                    slot.setEndTime(
+                            slot.getStartTime()
+                                    .plusMinutes(service.getDurationMinutes())
+                    );
 
                     slot.setBookedCount(0);
                     slot.setAvailableCount(slot.getMaxCapacity());
@@ -235,8 +290,7 @@ public class ServicesPetServiceImpl implements ServicesPetService {
                     continue;
                 }
 
-                // 6️⃣ ĐÃ CÓ BOOK → FREEZE SLOT CŨ
-
+                // 7️⃣ ĐÃ CÓ BOOK → FREEZE SLOT CŨ
                 BookingTime frozenSlot = new BookingTime();
                 frozenSlot.setService(service);
                 frozenSlot.setSlotDate(slot.getSlotDate());
@@ -250,24 +304,25 @@ public class ServicesPetServiceImpl implements ServicesPetService {
                 BookingTime savedFrozen =
                         bookingTimeRepository.save(frozenSlot);
 
-                // 6.1 Chuyển appointment sang frozen slot
+                // 7.1 Chuyển appointment sang frozen slot
                 for (ServiceAppointments ap : appointments) {
                     ap.setBookingTime(savedFrozen);
                     servicesAppointmentsRepository.save(ap);
                 }
 
-                // 7️⃣ Slot gốc → trở thành TEMPLATE MỚI
-
+                // 8️⃣ SLOT GỐC → TEMPLATE MỚI
                 if (newTime != null) {
                     slot.setStartTime(newTime);
-                    slot.setEndTime(
-                            newTime.plusMinutes(service.getDurationMinutes())
-                    );
                 }
 
                 if (newMaxCapacity != null) {
                     slot.setMaxCapacity(newMaxCapacity);
                 }
+
+                slot.setEndTime(
+                        slot.getStartTime()
+                                .plusMinutes(service.getDurationMinutes())
+                );
 
                 slot.setBookedCount(0);
                 slot.setAvailableCount(slot.getMaxCapacity());
@@ -277,13 +332,35 @@ public class ServicesPetServiceImpl implements ServicesPetService {
             }
         }
 
-        // 8️⃣ Response kèm timeTemplates
+        // 9️⃣ FIX BUG: duration đổi → update END TIME cho TOÀN BỘ slot ACTIVE
+        if (durationChanged) {
+            updateEndTimeForAllActiveSlots(service);
+        }
+
+        // 🔟 Response
         List<BookingTime> activeTimes =
                 bookingTimeRepository.findByService_IdAndIsActive(
                         servicePetId, "1"
                 );
 
         return mapServiceWithTimeTemplates(service, activeTimes);
+    }
+
+    private void updateEndTimeForAllActiveSlots(ServicesPet service) {
+
+        List<BookingTime> activeSlots =
+                bookingTimeRepository.findByService_IdAndIsActive(
+                        service.getId(), "1"
+                );
+
+        for (BookingTime slot : activeSlots) {
+            slot.setEndTime(
+                    slot.getStartTime()
+                            .plusMinutes(service.getDurationMinutes())
+            );
+        }
+
+        bookingTimeRepository.saveAll(activeSlots);
     }
 
     private ServicesPetResponse mapServiceToResponse(

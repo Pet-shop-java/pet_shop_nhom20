@@ -19,4 +19,5 @@ public interface PetService {
     void deletePet(int petId);
     PetResponse getPetById(int petId);
     PetResponse updatePet(int petId, PetUpdateRequest request);
+    void restorePet(int petId);
 }

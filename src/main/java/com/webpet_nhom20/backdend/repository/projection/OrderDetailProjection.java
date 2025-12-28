@@ -9,6 +9,7 @@ public interface OrderDetailProjection {
     String getOrderCode();
     String getStatus();
     BigDecimal getTotalAmount();
+    BigDecimal getShippingAmount();
     String getShippingAddress();
     Date getOrderDate();
 

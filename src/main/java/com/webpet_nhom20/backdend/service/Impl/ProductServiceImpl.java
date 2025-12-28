@@ -23,12 +23,13 @@ import org.springframework.data.domain.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
@@ -47,92 +48,75 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     @Cacheable(value = "product_list",
-            key = "'p:' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #categoryId"
+            key = "'p:' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #categoryId + ':' + (#search?:'') + ':' + (#minPrice?:'') + ':' + (#maxPrice?:'') + ':' + (#animal?:'') + ':' + (#brand?:'') + ':' + (#isFeature?:'') + ':' + (#isDelete?:'')"
     )
     public Page<ProductResponse> getAllProduct(Pageable pageable, Integer categoryId, String search, Double minPrice, Double maxPrice, String animal, String brand, String isFeature, String isDelete) {
-            Page<Products> productPage;
+        log.info("getAllProduct called with pageable={}, categoryId={}, search={}, minPrice={}, maxPrice={}, animal={}, brand={}, isFeature={}, isDelete={}",
+                pageable, categoryId, search, minPrice, maxPrice, animal, brand, isFeature, isDelete);
 
-            // 1. Chuẩn hóa tham số
-            boolean hasCategory = categoryId != null && categoryId > 0;
-            boolean hasSearch = search != null && !search.trim().isEmpty();
+        Page<Products> productPage;
 
-            // animal và brand có thể null, query repository đã xử lý logic này (IS NULL OR ...)
+        boolean hasCategory = categoryId != null && categoryId > 0;
+        boolean hasSearch = search != null && !search.trim().isEmpty();
+        boolean hasPrice = minPrice != null || maxPrice != null;
 
-            // Kiểm tra có lọc giá hay không (chỉ cần nhập min HOẶC max là tính có lọc)
-            boolean hasPrice = minPrice != null || maxPrice != null;
+        Double finalMin = (minPrice != null) ? minPrice : 0.0;
+        Double finalMax = (maxPrice != null) ? maxPrice : Double.MAX_VALUE;
 
-            // Tự động điền giá trị thiếu:
-            // - Nếu thiếu min -> coi như min = 0
-            // - Nếu thiếu max -> coi như max = số cực lớn
-            Double finalMin = (minPrice != null) ? minPrice : 0.0;
-            Double finalMax = (maxPrice != null) ? maxPrice : Double.MAX_VALUE;
+        boolean isSortByPrice = pageable.getSort().stream()
+                .anyMatch(order -> "price".equals(order.getProperty()));
 
-            // 2. Kiểm tra Sort
-            boolean isSortByPrice = pageable.getSort().stream()
-                    .anyMatch(order -> order.getProperty().equals("price"));
+        if (isSortByPrice) {
+            boolean isAsc = pageable.getSort().getOrderFor("price").isAscending();
+            Pageable unsortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
 
-            if (isSortByPrice) {
-                // === LOGIC SORT GIÁ (Dùng Native Query Custom) ===
-                boolean isAsc = pageable.getSort().getOrderFor("price").isAscending();
-
-                // Tạo Pageable mới KHÔNG CÓ SORT để tránh conflict với ORDER BY trong SQL
-                Pageable unsortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
-
-                if (isAsc) {
-                    productPage = productRepository.findAllWithFiltersSortedByPriceAsc(
-                            hasCategory ? categoryId : null,
-                            animal, // Thêm tham số animal
-                            brand,
-                            isDelete,
-                            isFeature,// Thêm tham số brand
-                            hasSearch ? search.trim() : null,
-                            finalMin, finalMax, unsortedPageable);
-                } else {
-                    productPage = productRepository.findAllWithFiltersSortedByPriceDesc(
-                            hasCategory ? categoryId : null,
-                            animal, // Thêm tham số animal
-                            brand,
-                            isDelete,
-                            isFeature,// Thêm tham số brand
-                            hasSearch ? search.trim() : null,
-                            finalMin, finalMax, unsortedPageable);
-                }
-            } else {
-                // === LOGIC THƯỜNG (Mặc định, Mới nhất, Bán chạy) ===
-
-                // FIX LỖI: Map tên biến Java sang tên cột Database thủ công
-                List<Sort.Order> dbOrders = pageable.getSort().stream()
-                        .map(order -> {
-                            String property = order.getProperty();
-                            // Map createdDate -> created_time (hoặc created_date tùy DB của bạn)
-                            if ("createdDate".equals(property)) return new Sort.Order(order.getDirection(), "created_date");
-                            // Map soldQuantity -> sold_quantity
-                            if ("soldQuantity".equals(property)) return new Sort.Order(order.getDirection(), "sold_quantity");
-                            // Các trường khác giữ nguyên
-                            return order;
-                        })
-                        .collect(Collectors.toList());
-
-                // Tạo Pageable mới với tên cột DB chuẩn
-                Pageable dbPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(dbOrders));
-
-                productPage = productRepository.findAllWithFilters(
+            if (isAsc) {
+                productPage = productRepository.findAllWithFiltersSortedByPriceAsc(
                         hasCategory ? categoryId : null,
-                        animal, // Thêm tham số animal
+                        animal,
                         brand,
                         isDelete,
-                        isFeature,// Thêm tham số brand
+                        isFeature,
                         hasSearch ? search.trim() : null,
-                        finalMin, finalMax, dbPageable);
+                        finalMin, finalMax, unsortedPageable);
+            } else {
+                productPage = productRepository.findAllWithFiltersSortedByPriceDesc(
+                        hasCategory ? categoryId : null,
+                        animal,
+                        brand,
+                        isDelete,
+                        isFeature,
+                        hasSearch ? search.trim() : null,
+                        finalMin, finalMax, unsortedPageable);
             }
-
-            // 3. Map Response
-            List<ProductResponse> productResponses = productPage.getContent().stream()
-                    .map(this::mapToProductResponse)
+        } else {
+            List<Sort.Order> dbOrders = pageable.getSort().stream()
+                    .map(order -> {
+                        String property = order.getProperty();
+                        if ("createdDate".equals(property)) return new Sort.Order(order.getDirection(), "created_date");
+                        if ("soldQuantity".equals(property))
+                            return new Sort.Order(order.getDirection(), "sold_quantity");
+                        return order;
+                    })
                     .collect(Collectors.toList());
 
-            return new PageImpl<>(productResponses, pageable, productPage.getTotalElements());
+            Pageable dbPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(dbOrders));
+
+            productPage = productRepository.findAllWithFilters(
+                    hasCategory ? categoryId : null,
+                    animal,
+                    brand,
+                    isDelete,
+                    isFeature,
+                    hasSearch ? search.trim() : null,
+                    finalMin, finalMax, dbPageable);
         }
+
+// Map content
+        Page<ProductResponse> mapped = productPage.map(this::mapToProductResponse);
+
+        return mapped;
+    }
     @Override
     @Cacheable(value = "product_detail", key = "#productId")
     public ProductResponse getProductById(int productId) {

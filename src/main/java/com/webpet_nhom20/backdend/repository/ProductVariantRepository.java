@@ -20,5 +20,16 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariants,
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT v FROM ProductVariants v WHERE v.id = :id")
     Optional<ProductVariants> findByIdForUpdate(@Param("id") Long id);
+    @Query("""
+    SELECT 
+        CASE 
+            WHEN pv.isDeleted = '1' THEN true 
+            ELSE false 
+        END
+    FROM ProductVariants pv
+    WHERE pv.id = :id
+""")
+    boolean isDeleted(@Param("id") Integer id);
+
 
 }

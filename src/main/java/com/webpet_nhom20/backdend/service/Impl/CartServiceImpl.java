@@ -113,10 +113,19 @@ public class CartServiceImpl implements CartService {
         // 1. Lấy cart theo user
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Cart not found"));
+
         // 2. Lấy list item trong cart
         List<CartItems> items = cartItemRepository.findByCartId(cart.getId());
+        List<CartItems> itemsNotDeleted = new ArrayList<>();
+        for (CartItems item : items) {
+            boolean isDeleted = productVariantRepository.isDeleted(item.getProductVariant().getId());
+            if(!isDeleted) {
+                itemsNotDeleted.add(item);
+            }
+        }
+
         // 3. Map sang DTO dựa trên hàm mapCartToResponse đã viết
-        return mapCartToResponse(cart, items);
+        return mapCartToResponse(cart, itemsNotDeleted);
     }
 
     @Override

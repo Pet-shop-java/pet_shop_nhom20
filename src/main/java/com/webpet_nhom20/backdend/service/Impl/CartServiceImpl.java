@@ -157,6 +157,7 @@ public class CartServiceImpl implements CartService {
             i.setUnitPrice(BigDecimal.valueOf(item.getProductVariant().getPrice()));
             i.setProductName(item.getProductVariant().getProduct().getName());
             i.setVariantName(item.getProductVariant().getVariantName());
+            i.setStockQuantity(item.getProductVariant().getStockQuantity());
 
             if (item.getProductVariant().getActualImages() != null &&
                     !item.getProductVariant().getActualImages().isEmpty()) {

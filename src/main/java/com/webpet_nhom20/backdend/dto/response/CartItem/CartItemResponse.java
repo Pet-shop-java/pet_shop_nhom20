@@ -14,10 +14,11 @@ import java.util.Date;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CartItemResponse {
 
-    int id;
-    int cartId;
-    int productVariantId;
-    int quantity;
+    Integer id;
+    Integer cartId;
+    Integer productVariantId;
+    Integer stockQuantity;
+    Integer quantity;
     BigDecimal unitPrice;
     String productName;
     String variantName;

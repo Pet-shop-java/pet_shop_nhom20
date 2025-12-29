@@ -18,8 +18,7 @@ public class GeminiChatService {
     public GeminiChatService(
             @Value("${gemini.api-key}") String apiKey,
             @Value("${gemini.chat-url}") String chatUrl,
-            @Value("${gemini.timeout-seconds:60}") int timeoutSeconds
-    ) {
+            @Value("${gemini.timeout-seconds:60}") int timeoutSeconds) {
         this.webClient = WebClient.builder()
                 .baseUrl(chatUrl)
                 .defaultHeader("Content-Type", "application/json")
@@ -35,18 +34,15 @@ public class GeminiChatService {
         }
 
         Map<String, Object> body = Map.of(
-                "contents", new Object[]{
+                "contents", new Object[] {
                         Map.of(
-                                "parts", new Object[]{
+                                "parts", new Object[] {
                                         Map.of("text", prompt)
-                                }
-                        )
+                                })
                 },
                 "generationConfig", Map.of(
                         "temperature", 0.2,
-                        "maxOutputTokens", 800
-                )
-        );
+                        "maxOutputTokens", 500));
 
         try {
             Map response = webClient.post()
@@ -57,8 +53,7 @@ public class GeminiChatService {
                                     .defaultIfEmpty("")
                                     .flatMap(err -> Mono.error(
                                             new RuntimeException("Gemini chat failed: "
-                                                    + res.statusCode() + " - " + err)
-                                    ));
+                                                    + res.statusCode() + " - " + err)));
                         }
                         return res.bodyToMono(Map.class);
                     })
@@ -85,7 +80,8 @@ public class GeminiChatService {
             }
 
             Map first = (Map) ((List) candidatesObj).get(0);
-            if (first == null) return fallback();
+            if (first == null)
+                return fallback();
 
             Object finishReason = first.get("finishReason");
             if (finishReason != null) {
@@ -93,7 +89,8 @@ public class GeminiChatService {
             }
 
             Object contentObj = first.get("content");
-            if (!(contentObj instanceof Map)) return fallback();
+            if (!(contentObj instanceof Map))
+                return fallback();
 
             Object partsObj = ((Map) contentObj).get("parts");
             if (!(partsObj instanceof List) || ((List) partsObj).isEmpty()) {
@@ -102,7 +99,8 @@ public class GeminiChatService {
 
             StringBuilder sb = new StringBuilder();
             for (Object part : (List) partsObj) {
-                if (!(part instanceof Map)) continue;
+                if (!(part instanceof Map))
+                    continue;
                 Object text = ((Map) part).get("text");
                 if (text != null) {
                     sb.append(text);

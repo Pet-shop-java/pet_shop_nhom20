@@ -135,7 +135,7 @@ public class ServicesAppointmentsServiceImpl implements ServicesAppointmentsServ
         String role = request.getRoleName();
         Page<ServiceAppointments> page;
 
-        if ("ADMIN".equals(role)) {
+        if ("SHOP".equals(role)) {
 
             page = servicesAppointmentsRepository
                     .findAllOrderByStatusAndNearest(pageable);

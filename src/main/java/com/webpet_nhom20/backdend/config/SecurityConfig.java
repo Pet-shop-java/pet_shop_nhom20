@@ -49,6 +49,8 @@ public class SecurityConfig {
             "/api/v1/auth/change-password",
             "/api/v1/adopt",
             "/api/v1/booking-times/available",
+            "/api/v1/services/check-title",
+            "/api/v1/booking-times/available",
             "/api/v1/chat/ask",
             "/api/v1/chat/ask-with-history"
 

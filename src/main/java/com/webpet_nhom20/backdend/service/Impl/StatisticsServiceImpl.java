@@ -180,4 +180,49 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         return topCustomers;
     }
+
+    @Override
+    public List<DailyRevenueDTO> getDailyRevenue(String startDate, String endDate) {
+        log.info("Fetching daily revenue from {} to {}", startDate, endDate);
+
+        List<Object[]> results = statisticsRepository.getDailyRevenue(startDate, endDate);
+        List<DailyRevenueDTO> dailyRevenues = new ArrayList<>();
+
+        for (Object[] row : results) {
+            java.sql.Date sqlDate = (java.sql.Date) row[0];
+            java.time.LocalDate localDate = sqlDate.toLocalDate();
+
+            dailyRevenues.add(DailyRevenueDTO.builder()
+                    .date(localDate)
+                    .dateLabel(localDate.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+                    .revenue(row[1] != null ? new BigDecimal(row[1].toString()) : BigDecimal.ZERO)
+                    .orderCount(((Number) row[2]).longValue())
+                    .build());
+        }
+
+        return dailyRevenues;
+    }
+
+    @Override
+    public List<WeeklyRevenueDTO> getWeeklyRevenue(String startDate, String endDate) {
+        log.info("Fetching weekly revenue from {} to {}", startDate, endDate);
+
+        List<Object[]> results = statisticsRepository.getWeeklyRevenue(startDate, endDate);
+        List<WeeklyRevenueDTO> weeklyRevenues = new ArrayList<>();
+
+        for (Object[] row : results) {
+            Integer year = ((Number) row[0]).intValue();
+            Integer weekNumber = ((Number) row[1]).intValue();
+
+            weeklyRevenues.add(WeeklyRevenueDTO.builder()
+                    .year(year)
+                    .weekNumber(weekNumber)
+                    .weekLabel(String.format("Tuần %d/%d", weekNumber, year))
+                    .revenue(row[2] != null ? new BigDecimal(row[2].toString()) : BigDecimal.ZERO)
+                    .orderCount(((Number) row[3]).longValue())
+                    .build());
+        }
+
+        return weeklyRevenues;
+    }
 }

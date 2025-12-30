@@ -57,4 +57,20 @@ public interface StatisticsService {
      * @param limit Number of customers to return (default 5)
      */
     List<TopCustomerDTO> getTopCustomers(int limit);
+
+    /**
+     * Get daily revenue within a date range
+     * 
+     * @param startDate Start date (yyyy-MM-dd)
+     * @param endDate   End date (yyyy-MM-dd)
+     */
+    List<DailyRevenueDTO> getDailyRevenue(String startDate, String endDate);
+
+    /**
+     * Get weekly revenue within a date range
+     * 
+     * @param startDate Start date (yyyy-MM-dd)
+     * @param endDate   End date (yyyy-MM-dd)
+     */
+    List<WeeklyRevenueDTO> getWeeklyRevenue(String startDate, String endDate);
 }

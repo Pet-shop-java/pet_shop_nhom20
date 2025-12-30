@@ -155,4 +155,46 @@ public class StatisticsController {
                 .result(topCustomers)
                 .build();
     }
+
+    /**
+     * Get daily revenue within a date range
+     * 
+     * @param startDate Start date (yyyy-MM-dd)
+     * @param endDate   End date (yyyy-MM-dd)
+     */
+    @GetMapping("/revenue/daily")
+    public ApiResponse<List<DailyRevenueDTO>> getDailyRevenue(
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+        log.info("API call: GET /api/admin/statistics/revenue/daily?startDate={}&endDate={}", startDate, endDate);
+
+        List<DailyRevenueDTO> dailyRevenue = statisticsService.getDailyRevenue(startDate, endDate);
+
+        return ApiResponse.<List<DailyRevenueDTO>>builder()
+                .success(true)
+                .message("Daily revenue retrieved successfully")
+                .result(dailyRevenue)
+                .build();
+    }
+
+    /**
+     * Get weekly revenue within a date range
+     * 
+     * @param startDate Start date (yyyy-MM-dd)
+     * @param endDate   End date (yyyy-MM-dd)
+     */
+    @GetMapping("/revenue/weekly")
+    public ApiResponse<List<WeeklyRevenueDTO>> getWeeklyRevenue(
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+        log.info("API call: GET /api/admin/statistics/revenue/weekly?startDate={}&endDate={}", startDate, endDate);
+
+        List<WeeklyRevenueDTO> weeklyRevenue = statisticsService.getWeeklyRevenue(startDate, endDate);
+
+        return ApiResponse.<List<WeeklyRevenueDTO>>builder()
+                .success(true)
+                .message("Weekly revenue retrieved successfully")
+                .result(weeklyRevenue)
+                .build();
+    }
 }

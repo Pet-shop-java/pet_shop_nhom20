@@ -25,9 +25,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
 @Slf4j
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE , makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Service
 
 public class UserServiceImpl implements UserService {
@@ -44,21 +45,23 @@ public class UserServiceImpl implements UserService {
     PasswordEncoder passwordEncoder;
     @Autowired
     private OtpService otpService;
+
     public UserResponse createUser(UserCreationRequest request, String otp) {
         otpService.verifyOtp(request.getEmail(), otp);
-        if(userRepository.existsByUsername(request.getUsername())){
+        if (userRepository.existsByUsername(request.getUsername())) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
-        if(userRepository.existsByEmail(request.getEmail())){
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
-        if(userRepository.existsByPhone(request.getPhone())){
+        if (userRepository.existsByPhone(request.getPhone())) {
             throw new AppException(ErrorCode.PHONE_EXISTED);
         }
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setIsDeleted("0");
-        var roleCustomer = roleRepository.findById("CUSTOMER").orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+        var roleCustomer = roleRepository.findById("CUSTOMER")
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
         user.setRole(roleCustomer);
         User savedUser = userRepository.save(user);
 
@@ -71,12 +74,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse updateUser(int userId, UserUpdateRequest request) {
-        User user = userRepository.findById(userId).orElseThrow(()->new AppException(ErrorCode.USER_NOT_EXISTS));
-        userMapper.updateUser(user,request);
+        User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTS));
+        userMapper.updateUser(user, request);
         return userMapper.toUserResponse(userRepository.save(user));
     }
 
-    public UserResponse getMyInfo(){
+    public UserResponse getMyInfo() {
         var context = SecurityContextHolder.getContext();
         String name = context.getAuthentication().getName();
         User user = userRepository.findByUsername(name).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTS));
@@ -87,16 +90,15 @@ public class UserServiceImpl implements UserService {
     @Override
     @PostAuthorize("returnObject.username == authentication.name")
     public UserResponse getUser(int id) {
-        return userMapper.toUserResponse(userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTS))) ;
+        return userMapper.toUserResponse(
+                userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTS)));
     }
-
-
-
 
     @Override
     public List<UserResponse> getUsers() {
         return userRepository.findAll().stream().map(userMapper::toUserResponse).toList();
     }
+
     @Override
     public String changeUserPassword(int userId, ChangePasswordUserRequest request) {
         // Lấy user trong DB theo ID
@@ -118,5 +120,22 @@ public class UserServiceImpl implements UserService {
         return "Đổi mật khẩu thành công";
     }
 
+    @Override
+    public List<String> searchEmailsByKeyword(String keyword) {
+        List<User> users =
+                userRepository.findByEmailContainingIgnoreCaseAndRoleName(
+                        keyword, "CUSTOMER"
+                );
+
+        // Không có kết quả
+        if (users.isEmpty()) {
+            throw new AppException(ErrorCode.EMAIL_NOT_FOUND);
+        }
+
+        return users.stream()
+                .map(User::getEmail)
+                .limit(10)
+                .toList();
+    }
 
 }

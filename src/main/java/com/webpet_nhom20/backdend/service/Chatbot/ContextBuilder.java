@@ -1,6 +1,5 @@
 package com.webpet_nhom20.backdend.service.Chatbot;
 
-
 import com.webpet_nhom20.backdend.dto.chatbot.QdrantSearchResult;
 import org.springframework.stereotype.Service;
 
@@ -25,14 +24,15 @@ public class ContextBuilder {
 
         int count = 0;
         for (QdrantSearchResult r : results) {
-            if (count >= MAX_ITEMS) break;
+            if (count >= MAX_ITEMS)
+                break;
 
             Map<String, Object> p = r.payload();
             if (p == null || p.isEmpty()) {
                 continue;
             }
 
-            ctx.append("- name: ").append(val(p, "name")).append("\n");
+            ctx.append("- name: ").append(cleanProductName(val(p, "name"))).append("\n");
 
             if (p.containsKey("price"))
                 ctx.append("  price: ").append(formatPrice(p.get("price"))).append("\n");
@@ -70,15 +70,50 @@ public class ContextBuilder {
 
     private String val(Map<String, Object> p, String k, int maxLen) {
         Object v = p.get(k);
-        if (v == null) return "";
+        if (v == null)
+            return "";
         String s = String.valueOf(v);
-        if (s.length() <= maxLen) return s;
+        if (s.length() <= maxLen)
+            return s;
         return s.substring(0, maxLen) + "...";
     }
 
+    /**
+     * Loại bỏ prefix brand (PetCare Việt, etc) và mã ID (#xxx) để tiết kiệm token
+     */
+    private String cleanProductName(String name) {
+        if (name == null || name.isBlank())
+            return "";
+
+        String cleaned = name;
+
+        // Loại bỏ các brand prefix phổ biến
+        String[] brandPrefixes = {
+                "PetCare Việt ",
+                "PetCare ",
+                "Pet Care ",
+                "Royal Canin ",
+                "Pedigree "
+        };
+
+        for (String prefix : brandPrefixes) {
+            if (cleaned.startsWith(prefix)) {
+                cleaned = cleaned.substring(prefix.length());
+                break;
+            }
+        }
+
+        // Loại bỏ mã ID dạng #123 ở cuối
+        cleaned = cleaned.replaceAll("\\s*#\\d+\\s*$", "");
+
+        return cleaned.trim();
+    }
+
     private String formatPrice(Object price) {
-        if (price == null) return "";
-        if (!(price instanceof Number)) return String.valueOf(price);
+        if (price == null)
+            return "";
+        if (!(price instanceof Number))
+            return String.valueOf(price);
 
         long rounded = Math.round(((Number) price).doubleValue());
         DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.ROOT);

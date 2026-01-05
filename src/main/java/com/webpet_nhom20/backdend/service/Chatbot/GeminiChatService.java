@@ -42,7 +42,7 @@ public class GeminiChatService {
                 },
                 "generationConfig", Map.of(
                         "temperature", 0.2,
-                        "maxOutputTokens", 500));
+                        "maxOutputTokens", 800));
 
         try {
             Map response = webClient.post()
@@ -84,8 +84,14 @@ public class GeminiChatService {
                 return fallback();
 
             Object finishReason = first.get("finishReason");
+            boolean wasTruncated = false;
             if (finishReason != null) {
                 log.info("Gemini finishReason = {}", finishReason);
+                String reason = finishReason.toString();
+                if ("MAX_TOKENS".equals(reason) || "LENGTH".equals(reason)) {
+                    wasTruncated = true;
+                    log.warn("Response was truncated due to: {}", reason);
+                }
             }
 
             Object contentObj = first.get("content");
@@ -112,12 +118,36 @@ public class GeminiChatService {
                 return fallback();
             }
 
-            return sb.toString();
+            String result = sb.toString().trim();
+
+            // Nếu bị cắt ngang và không kết thúc bằng dấu câu, thêm dấu chấm
+            if (wasTruncated && result.length() > 0) {
+                char lastChar = result.charAt(result.length() - 1);
+                if (!isPunctuationEnd(lastChar)) {
+                    // Tìm vị trí dấu câu cuối cùng và cắt từ đó
+                    int lastPunctuation = Math.max(
+                            Math.max(result.lastIndexOf('.'), result.lastIndexOf('!')),
+                            Math.max(result.lastIndexOf('?'), result.lastIndexOf('。')));
+                    if (lastPunctuation > result.length() / 2) {
+                        // Nếu tìm thấy dấu câu ở nửa sau, cắt từ đó
+                        result = result.substring(0, lastPunctuation + 1);
+                    } else {
+                        // Nếu không, thêm "..." để báo hiệu chưa xong
+                        result += "...";
+                    }
+                }
+            }
+
+            return result;
 
         } catch (Exception e) {
             log.warn("Gemini response parse failed: {}", e.toString());
             return fallback();
         }
+    }
+
+    private boolean isPunctuationEnd(char c) {
+        return c == '.' || c == '!' || c == '?' || c == '。' || c == '！' || c == '？';
     }
 
     private String fallback() {

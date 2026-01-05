@@ -1,6 +1,5 @@
 package com.webpet_nhom20.backdend.service.Chatbot;
 
-
 import com.webpet_nhom20.backdend.dto.chatbot.ChatMessage;
 import com.webpet_nhom20.backdend.dto.chatbot.ChatResponse;
 import com.webpet_nhom20.backdend.dto.chatbot.QdrantSearchResult;
@@ -55,18 +54,16 @@ public class ChatbotService {
         try {
             results = qdrantService.search(
                     queryVector,
-                    3,          // topK
-                    null,       // score threshold (tắt để debug empty results)
-                    buildFilters(question)
-            );
+                    3, // topK
+                    null, // score threshold (tắt để debug empty results)
+                    buildFilters(question));
         } catch (RuntimeException e) {
             if (isMissingIndexError(e)) {
                 results = qdrantService.search(
                         queryVector,
                         3,
                         null,
-                        null
-                );
+                        null);
             } else {
                 throw e;
             }
@@ -77,14 +74,15 @@ public class ChatbotService {
             System.out.println("QDRANT TOP SCORE = " + results.get(0).score());
         }
         // 3️⃣ Decision / Confidence Check
-        DecistionType decision = decisionService.decide(question, results);
-        System.out.println("DECISION = " + decision);
-
-        String context = contextBuilder.build(results);
         List<ChatMessage> storedHistory = chatHistoryStore.getHistory(sid, HISTORY_LIMIT);
         List<ChatMessage> historyForPrompt = (history != null && !history.isEmpty())
                 ? history
                 : storedHistory;
+
+        DecistionType decision = decisionService.decide(question, results, historyForPrompt);
+        System.out.println("DECISION = " + decision);
+
+        String context = contextBuilder.build(results);
         String historyText = formatHistory(historyForPrompt);
 
         // 4️⃣ Trả lời NGAY – KHÔNG GỌI LLM
@@ -106,11 +104,26 @@ public class ChatbotService {
     }
 
     private java.util.Map<String, Object> buildFilters(String question) {
-        if (question == null) return null;
+        if (question == null)
+            return null;
         String q = question.toLowerCase();
+
+        // Filter theo loài (ưu tiên cao nhất)
+        if (q.contains("chó") || q.contains("cún") || q.contains("dog")) {
+            return java.util.Map.of("animal", "chó");
+        }
+        if (q.contains("mèo") || q.contains("cat") || q.contains("meo")) {
+            return java.util.Map.of("animal", "mèo");
+        }
+        if (q.contains("cá") || q.contains("fish")) {
+            return java.util.Map.of("animal", "cá");
+        }
+
+        // Filter theo category
         if (q.contains("cát vệ sinh")) {
             return java.util.Map.of("category", "cát vệ sinh");
         }
+
         return null;
     }
 
@@ -120,15 +133,18 @@ public class ChatbotService {
     }
 
     private String formatHistory(List<ChatMessage> history) {
-        if (history == null || history.isEmpty()) return "";
+        if (history == null || history.isEmpty())
+            return "";
         StringBuilder sb = new StringBuilder();
         int from = Math.max(0, history.size() - HISTORY_LIMIT);
         for (int i = from; i < history.size(); i++) {
             ChatMessage m = history.get(i);
-            if (m == null) continue;
+            if (m == null)
+                continue;
             String role = m.getRole() == null ? "unknown" : m.getRole().trim();
             String text = m.getText() == null ? "" : m.getText().trim();
-            if (text.isEmpty()) continue;
+            if (text.isEmpty())
+                continue;
             sb.append(role).append(": ").append(text).append("\n");
         }
         return sb.toString().trim();
@@ -139,8 +155,7 @@ public class ChatbotService {
             List<ChatMessage> storedHistory,
             List<ChatMessage> historyFromClient,
             String question,
-            String answer
-    ) {
+            String answer) {
         if ((storedHistory == null || storedHistory.isEmpty())
                 && historyFromClient != null && !historyFromClient.isEmpty()) {
             chatHistoryStore.appendAll(sessionId, historyFromClient);

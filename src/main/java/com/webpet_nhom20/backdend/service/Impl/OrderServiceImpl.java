@@ -348,7 +348,7 @@ public class OrderServiceImpl implements OrderService {
 
 
 
-    @PreAuthorize("hasRole('SHOP')")
+
     public UpdateOrderStatusResponse updateOrderStatus (UpdateOrderStatusRequest request) {
 
         List<String> success = new ArrayList<>();

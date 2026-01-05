@@ -1,7 +1,7 @@
 package com.webpet_nhom20.backdend.service.Chatbot;
 
 import com.webpet_nhom20.backdend.dto.chatbot.ChatMessage;
-import com.webpet_nhom20.backdend.dto.chatbot.QdrantSearchResult;
+import com.webpet_nhom20.backdend.entity.Products;
 import com.webpet_nhom20.backdend.enums.DecistionType;
 import org.springframework.stereotype.Service;
 
@@ -9,23 +9,19 @@ import java.util.List;
 
 @Service
 public class DecisionService {
-    private static final double SCORE_THRESHOLD = 0.4;
 
     public DecistionType decide(
             String question,
-            List<QdrantSearchResult> results,
+            List<Products> products,
             List<ChatMessage> history) {
 
-        // Rule 1: không có kết quả
-        if (results == null || results.isEmpty()) {
+        // Rule 1: không có kết quả từ DB
+        if (products == null || products.isEmpty()) {
             return DecistionType.OUT_OF_SCOPE;
         }
 
-        // Rule 2: score thấp
-        float topScore = results.get(0).score();
-        if (topScore < SCORE_THRESHOLD) {
-            return DecistionType.LOW_CONFIDENCE;
-        }
+        // Rule 2: Không cần score check với DB query
+        // (khác với Qdrant vector search)
 
         // Rule 3: câu hỏi mơ hồ (nhưng cho phép nếu có history)
         if (isAmbiguous(question, history)) {

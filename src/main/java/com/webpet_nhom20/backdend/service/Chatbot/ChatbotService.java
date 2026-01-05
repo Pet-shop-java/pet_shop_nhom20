@@ -2,7 +2,7 @@ package com.webpet_nhom20.backdend.service.Chatbot;
 
 import com.webpet_nhom20.backdend.dto.chatbot.ChatMessage;
 import com.webpet_nhom20.backdend.dto.chatbot.ChatResponse;
-import com.webpet_nhom20.backdend.dto.chatbot.QdrantSearchResult;
+import com.webpet_nhom20.backdend.entity.Products;
 import com.webpet_nhom20.backdend.enums.DecistionType;
 import org.springframework.stereotype.Service;
 
@@ -12,26 +12,23 @@ import java.util.UUID;
 @Service
 public class ChatbotService {
     private static final int HISTORY_LIMIT = 8;
-    private final EmbeddingService embeddingService;
-    private final QdrantService qdrantService;
+    private final ProductQueryService productQueryService;
+    private final DBContextBuilder dbContextBuilder;
     private final DecisionService decisionService;
-    private final ContextBuilder contextBuilder;
     private final PromptBuilder promptBuilder;
     private final GeminiChatService geminiChatService;
     private final ChatHistoryStore chatHistoryStore;
 
     public ChatbotService(
-            EmbeddingService embeddingService,
-            QdrantService qdrantService,
+            ProductQueryService productQueryService,
+            DBContextBuilder dbContextBuilder,
             DecisionService decisionService,
-            ContextBuilder contextBuilder,
             PromptBuilder promptBuilder,
             GeminiChatService geminiChatService,
             ChatHistoryStore chatHistoryStore) {
-        this.embeddingService = embeddingService;
-        this.qdrantService = qdrantService;
+        this.productQueryService = productQueryService;
+        this.dbContextBuilder = dbContextBuilder;
         this.decisionService = decisionService;
-        this.contextBuilder = contextBuilder;
         this.promptBuilder = promptBuilder;
         this.geminiChatService = geminiChatService;
         this.chatHistoryStore = chatHistoryStore;
@@ -46,43 +43,26 @@ public class ChatbotService {
                 ? UUID.randomUUID().toString()
                 : sessionId;
 
-        // 1️⃣ Embed câu hỏi
-        float[] queryVector = embeddingService.embed(question);
+        // 1️⃣ Query sản phẩm VÀ dịch vụ từ DB
+        List<Products> products = productQueryService.searchProducts(question, 5);
+        List<com.webpet_nhom20.backdend.entity.ServicesPet> services = productQueryService.searchServices(5);
 
-        // 2️⃣ Search Qdrant (chưa filter để tránh lỗi index)
-        List<QdrantSearchResult> results;
-        try {
-            results = qdrantService.search(
-                    queryVector,
-                    3, // topK
-                    null, // score threshold (tắt để debug empty results)
-                    buildFilters(question));
-        } catch (RuntimeException e) {
-            if (isMissingIndexError(e)) {
-                results = qdrantService.search(
-                        queryVector,
-                        3,
-                        null,
-                        null);
-            } else {
-                throw e;
-            }
-        }
+        System.out.println("DB QUERY: " + products.size() + " products, " + services.size() + " services");
 
-        System.out.println("QDRANT RESULTS SIZE = " + results.size());
-        if (!results.isEmpty()) {
-            System.out.println("QDRANT TOP SCORE = " + results.get(0).score());
-        }
-        // 3️⃣ Decision / Confidence Check
+        // 2️⃣ Decision / Confidence Check
         List<ChatMessage> storedHistory = chatHistoryStore.getHistory(sid, HISTORY_LIMIT);
         List<ChatMessage> historyForPrompt = (history != null && !history.isEmpty())
                 ? history
                 : storedHistory;
 
-        DecistionType decision = decisionService.decide(question, results, historyForPrompt);
+        // Chỉ check products để quyết định, vì có thể user hỏi về service
+        DecistionType decision = (products.isEmpty() && services.isEmpty())
+                ? DecistionType.OUT_OF_SCOPE
+                : DecistionType.ALLOW_IG;
         System.out.println("DECISION = " + decision);
 
-        String context = contextBuilder.build(results);
+        // Build context từ cả sản phẩm VÀ services
+        String context = dbContextBuilder.buildCombined(products, services);
         String historyText = formatHistory(historyForPrompt);
 
         // 4️⃣ Trả lời NGAY – KHÔNG GỌI LLM
@@ -101,35 +81,6 @@ public class ChatbotService {
         String answer = geminiChatService.generate(prompt);
         persistHistoryIfNeeded(sid, storedHistory, history, question, answer);
         return new ChatResponse(answer, context, sid);
-    }
-
-    private java.util.Map<String, Object> buildFilters(String question) {
-        if (question == null)
-            return null;
-        String q = question.toLowerCase();
-
-        // Filter theo loài (ưu tiên cao nhất)
-        if (q.contains("chó") || q.contains("cún") || q.contains("dog")) {
-            return java.util.Map.of("animal", "chó");
-        }
-        if (q.contains("mèo") || q.contains("cat") || q.contains("meo")) {
-            return java.util.Map.of("animal", "mèo");
-        }
-        if (q.contains("cá") || q.contains("fish")) {
-            return java.util.Map.of("animal", "cá");
-        }
-
-        // Filter theo category
-        if (q.contains("cát vệ sinh")) {
-            return java.util.Map.of("category", "cát vệ sinh");
-        }
-
-        return null;
-    }
-
-    private boolean isMissingIndexError(RuntimeException e) {
-        String msg = e.getMessage();
-        return msg != null && msg.contains("Index required");
     }
 
     private String formatHistory(List<ChatMessage> history) {

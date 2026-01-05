@@ -42,7 +42,7 @@ public class GeminiChatService {
                 },
                 "generationConfig", Map.of(
                         "temperature", 0.2,
-                        "maxOutputTokens", 800));
+                        "maxOutputTokens", 1500));
 
         try {
             Map response = webClient.post()

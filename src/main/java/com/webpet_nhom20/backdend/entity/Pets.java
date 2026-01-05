@@ -32,8 +32,8 @@ public class Pets {
     @Column(name = "age_group", length = 100)
     private String ageGroup;
 
-    @Column(name = "size", length = 100)
-    private String size;
+    @Column(name = "weight", length = 100)
+    private Float weight;
 
     @Column(name = "gender", length = 100)
     private String gender;

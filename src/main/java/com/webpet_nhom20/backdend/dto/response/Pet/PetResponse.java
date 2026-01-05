@@ -25,7 +25,7 @@ public class PetResponse {
     private String breed;
     private Integer age;
     private String ageGroup;
-    private String size;
+    private Float weight;
     private String gender;
     private String description;
     private String healthStatus;

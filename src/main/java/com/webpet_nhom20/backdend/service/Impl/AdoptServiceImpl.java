@@ -123,7 +123,7 @@ public class AdoptServiceImpl implements AdoptService {
                         .animal(p.getAnimal())
                         .breed(p.getBreed())
                         .age(p.getAge())
-                        .size(p.getSize())
+                        .weight(p.getWeight())
                         .gender(p.getGender())
                         .image(p.getPetImage())
                         .build())

@@ -67,7 +67,7 @@ SELECT
  p.animal      AS animal,
  p.breed       AS breed,
  p.age         AS age,
- p.size        AS size,
+ p.weight        AS weight,
  p.gender      AS gender,
 
  pi.imageUrl   AS petImage,

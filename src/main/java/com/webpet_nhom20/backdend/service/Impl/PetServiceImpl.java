@@ -51,7 +51,7 @@ public class PetServiceImpl implements PetService {
                 .breed(request.getBreed())
                 .age(request.getAge())
                 .ageGroup(request.getAgeGroup())
-                .size(request.getSize())
+                .weight(request.getWeight())
                 .gender(request.getGender())
                 .description(request.getDescription())
                 .healthStatus(request.getHealthStatus())
@@ -69,7 +69,7 @@ public class PetServiceImpl implements PetService {
                 .breed(savedPet.getBreed())
                 .age(savedPet.getAge())
                 .ageGroup(savedPet.getAgeGroup())
-                .size(savedPet.getSize())
+                .weight(savedPet.getWeight())
                 .gender(savedPet.getGender())
                 .description(savedPet.getDescription())
                 .healthStatus(savedPet.getHealthStatus())
@@ -98,7 +98,7 @@ public class PetServiceImpl implements PetService {
                         .breed(request.getBreed())
                         .age(request.getAge())
                         .ageGroup(request.getAgeGroup())
-                        .size(request.getSize())
+                        .weight(request.getWeight())
                         .gender(request.getGender())
                         .description(request.getDescription())
                         .healthStatus(request.getHealthStatus())
@@ -136,7 +136,7 @@ public class PetServiceImpl implements PetService {
                 .breed(pet.getBreed())
                 .age(pet.getAge())
                 .ageGroup(pet.getAgeGroup())
-                .size(pet.getSize())
+                .weight(pet.getWeight())
                 .gender(pet.getGender())
                 .description(pet.getDescription())
                 .healthStatus(pet.getHealthStatus())
@@ -165,13 +165,14 @@ public class PetServiceImpl implements PetService {
         return response;
     }
     @Override
-    public Page<PetResponse> getAllPets(String isDeleted, String animal, String size, String ageGroup, Pageable pageable, String status) {
+    public Page<PetResponse> getAllPets(String isDeleted, String animal, Float minWeight, Float maxWeight, String ageGroup, Pageable pageable, String status) {
         // 1️⃣ Chuẩn hóa điều kiện filter
         boolean hasAnimal = animal != null && !animal.isBlank();
-        boolean hasSize = size != null && !size.isBlank();
+        // Không cần check hasWeight nữa vì ta truyền thẳng null vào query
         boolean hasAgeGroup = ageGroup != null && !ageGroup.isBlank();
         boolean hasIsDeleted = isDeleted != null && !isDeleted.isBlank();
         boolean hasStatus = status != null && !status.isBlank();
+
         // 2️⃣ Mapping SORT (camelCase → snake_case)
         List<Sort.Order> dbOrders = pageable.getSort().stream()
                 .map(order -> {
@@ -193,7 +194,8 @@ public class PetServiceImpl implements PetService {
         // 3️⃣ Query DB
         Page<Pets> petPage = petRepository.findAllWithFilters(
                 hasAnimal ? animal : null,
-                hasSize ? size : null,
+                minWeight, // Truyền trực tiếp (null nếu không có)
+                maxWeight, // Truyền trực tiếp (null nếu không có)
                 hasAgeGroup ? ageGroup : null,
                 hasStatus ? status : null,
                 hasIsDeleted ? isDeleted : null,
@@ -246,9 +248,6 @@ public class PetServiceImpl implements PetService {
     @PreAuthorize("hasRole('SHOP')")
     @Transactional
     public PetResponse updatePet(int petId, PetUpdateRequest request) {
-        if(petRepository.existsByName(request.getName())){
-            throw new AppException(ErrorCode.PET_IS_EXISTED);
-        }
         Pets pet = petRepository.findById(petId)
                 .orElseThrow(() -> new AppException(ErrorCode.PET_NOT_FOUND));
         pet.setName(request.getName());
@@ -256,7 +255,7 @@ public class PetServiceImpl implements PetService {
         pet.setBreed(request.getBreed());
         pet.setAge(request.getAge());
         pet.setAgeGroup(request.getAgeGroup());
-        pet.setSize(request.getSize());
+        pet.setWeight(request.getWeight());
         pet.setGender(request.getGender());
         pet.setDescription(request.getDescription());
         pet.setHealthStatus(request.getHealthStatus());

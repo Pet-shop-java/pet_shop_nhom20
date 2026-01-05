@@ -42,13 +42,21 @@ public class PetController {
                 .result(response)
                 .build();
     }
-    @GetMapping()
-    public ApiResponse<Page<PetResponse>> getAllPets(Pageable pageable, @RequestParam (required = false) String animal, @RequestParam (required = false) String size,
-                                                     @RequestParam (required = false) String ageGroup, @RequestParam (required = false) String isDeleted, @RequestParam (required = false) String status) {
-        return ApiResponse.<Page<PetResponse>>builder().
-                success(true)
+    @GetMapping
+    public ApiResponse<Page<PetResponse>> getAllPets(
+            Pageable pageable,
+            @RequestParam(required = false) String animal,
+            @RequestParam(required = false) Float minWeight, // Thay Float weight bằng minWeight
+            @RequestParam(required = false) Float maxWeight, // Thêm maxWeight
+            @RequestParam(required = false) String ageGroup,
+            @RequestParam(required = false) String isDeleted,
+            @RequestParam(required = false) String status) {
+
+        return ApiResponse.<Page<PetResponse>>builder()
+                .success(true)
                 .message("Lấy danh sách sản phẩm thành công")
-                .result(petService.getAllPets(isDeleted, animal , size, ageGroup, pageable,status)).build();
+                .result(petService.getAllPets(isDeleted, animal, minWeight,maxWeight, ageGroup, pageable, status))
+                .build();
     }
     @GetMapping("/animalsCustomer")
     public ApiResponse<List<String>> getAnimalForCustomer() {

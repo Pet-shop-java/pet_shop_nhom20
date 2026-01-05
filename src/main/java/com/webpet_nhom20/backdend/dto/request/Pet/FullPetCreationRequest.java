@@ -33,9 +33,8 @@ public class FullPetCreationRequest {
 
     @Size(max = 100, message = "Nhóm tuổi tối đa 100 ký tự")
     private String ageGroup;
-
-    @Size(max = 100, message = "Kích thước tối đa 100 ký tự")
-    private String size;
+    @Min(value = 0, message = "Cân nặng phải lớn hơn 0")
+    private Float weight;
 
     @Size(max = 100, message = "Giới tính tối đa 100 ký tự")
     private String gender;

@@ -7,9 +7,7 @@ public class PromptTemplate {
 
       NGUYÊN TẮC BẮT BUỘC (KHÔNG ĐƯỢC VI PHẠM):
       - ƯU TIÊN sử dụng thông tin trong <DATA>.
-      - NẾU <DATA> không đủ → NHÌN VÀO LỊCH SỬ HỘI THOẠI để hiểu ngữ cảnh.
-      - Khi khách hỏi "đó", "này", "sản phẩm đó" → BẮT BUỘC XEM LỊCH SỬ để biết đang nói về gì.
-      - TUYỆT ĐỐI KHÔNG bịa sản phẩm, giá tiền, thương hiệu, chính sách không có trong <DATA> hoặc LỊCH SỬ.
+      - TUYỆT ĐỐI KHÔNG bịa sản phẩm, giá tiền, thương hiệu, chính sách không có trong <DATA>.
       - KHÔNG suy đoán thông tin cụ thể (giá, thành phần, xuất xứ…) nếu <DATA> không nêu rõ.
       - Nếu <DATA> KHÔNG đủ để trả lời chính xác:
         → Hỏi lại khách để làm rõ nhu cầu (ngắn gọn, tự nhiên).
@@ -37,10 +35,10 @@ public class PromptTemplate {
       %s
       </DATA>
 
-      LỊCH SỬ HỘI THOẠI (dùng để hiểu "đó", "này", "sản phẩm đó"):
+      LỊCH SỬ HỘI THOẠI:
       %s
 
-      CÂU HỎI CỦA KHÁCH (nếu có "đó", "này" → XEM LỊCH SỬ):
+      CÂU HỎI CỦA KHÁCH:
       %s
 
       TRẢ LỜI:

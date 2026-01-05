@@ -1,8 +1,9 @@
 package com.webpet_nhom20.backdend.service.Chatbot;
 
+
 import com.webpet_nhom20.backdend.dto.chatbot.ChatMessage;
 import com.webpet_nhom20.backdend.dto.chatbot.ChatResponse;
-import com.webpet_nhom20.backdend.entity.Products;
+import com.webpet_nhom20.backdend.dto.chatbot.QdrantSearchResult;
 import com.webpet_nhom20.backdend.enums.DecistionType;
 import org.springframework.stereotype.Service;
 
@@ -12,23 +13,26 @@ import java.util.UUID;
 @Service
 public class ChatbotService {
     private static final int HISTORY_LIMIT = 8;
-    private final ProductQueryService productQueryService;
-    private final DBContextBuilder dbContextBuilder;
+    private final EmbeddingService embeddingService;
+    private final QdrantService qdrantService;
     private final DecisionService decisionService;
+    private final ContextBuilder contextBuilder;
     private final PromptBuilder promptBuilder;
     private final GeminiChatService geminiChatService;
     private final ChatHistoryStore chatHistoryStore;
 
     public ChatbotService(
-            ProductQueryService productQueryService,
-            DBContextBuilder dbContextBuilder,
+            EmbeddingService embeddingService,
+            QdrantService qdrantService,
             DecisionService decisionService,
+            ContextBuilder contextBuilder,
             PromptBuilder promptBuilder,
             GeminiChatService geminiChatService,
             ChatHistoryStore chatHistoryStore) {
-        this.productQueryService = productQueryService;
-        this.dbContextBuilder = dbContextBuilder;
+        this.embeddingService = embeddingService;
+        this.qdrantService = qdrantService;
         this.decisionService = decisionService;
+        this.contextBuilder = contextBuilder;
         this.promptBuilder = promptBuilder;
         this.geminiChatService = geminiChatService;
         this.chatHistoryStore = chatHistoryStore;
@@ -43,26 +47,44 @@ public class ChatbotService {
                 ? UUID.randomUUID().toString()
                 : sessionId;
 
-        // 1️⃣ Query sản phẩm VÀ dịch vụ từ DB
-        List<Products> products = productQueryService.searchProducts(question, 5);
-        List<com.webpet_nhom20.backdend.entity.ServicesPet> services = productQueryService.searchServices(5);
+        // 1️⃣ Embed câu hỏi
+        float[] queryVector = embeddingService.embed(question);
 
-        System.out.println("DB QUERY: " + products.size() + " products, " + services.size() + " services");
+        // 2️⃣ Search Qdrant (chưa filter để tránh lỗi index)
+        List<QdrantSearchResult> results;
+        try {
+            results = qdrantService.search(
+                    queryVector,
+                    3,          // topK
+                    null,       // score threshold (tắt để debug empty results)
+                    buildFilters(question)
+            );
+        } catch (RuntimeException e) {
+            if (isMissingIndexError(e)) {
+                results = qdrantService.search(
+                        queryVector,
+                        3,
+                        null,
+                        null
+                );
+            } else {
+                throw e;
+            }
+        }
 
-        // 2️⃣ Decision / Confidence Check
+        System.out.println("QDRANT RESULTS SIZE = " + results.size());
+        if (!results.isEmpty()) {
+            System.out.println("QDRANT TOP SCORE = " + results.get(0).score());
+        }
+        // 3️⃣ Decision / Confidence Check
+        DecistionType decision = decisionService.decide(question, results);
+        System.out.println("DECISION = " + decision);
+
+        String context = contextBuilder.build(results);
         List<ChatMessage> storedHistory = chatHistoryStore.getHistory(sid, HISTORY_LIMIT);
         List<ChatMessage> historyForPrompt = (history != null && !history.isEmpty())
                 ? history
                 : storedHistory;
-
-        // Chỉ check products để quyết định, vì có thể user hỏi về service
-        DecistionType decision = (products.isEmpty() && services.isEmpty())
-                ? DecistionType.OUT_OF_SCOPE
-                : DecistionType.ALLOW_IG;
-        System.out.println("DECISION = " + decision);
-
-        // Build context từ cả sản phẩm VÀ services
-        String context = dbContextBuilder.buildCombined(products, services);
         String historyText = formatHistory(historyForPrompt);
 
         // 4️⃣ Trả lời NGAY – KHÔNG GỌI LLM
@@ -83,19 +105,30 @@ public class ChatbotService {
         return new ChatResponse(answer, context, sid);
     }
 
+    private java.util.Map<String, Object> buildFilters(String question) {
+        if (question == null) return null;
+        String q = question.toLowerCase();
+        if (q.contains("cát vệ sinh")) {
+            return java.util.Map.of("category", "cát vệ sinh");
+        }
+        return null;
+    }
+
+    private boolean isMissingIndexError(RuntimeException e) {
+        String msg = e.getMessage();
+        return msg != null && msg.contains("Index required");
+    }
+
     private String formatHistory(List<ChatMessage> history) {
-        if (history == null || history.isEmpty())
-            return "";
+        if (history == null || history.isEmpty()) return "";
         StringBuilder sb = new StringBuilder();
         int from = Math.max(0, history.size() - HISTORY_LIMIT);
         for (int i = from; i < history.size(); i++) {
             ChatMessage m = history.get(i);
-            if (m == null)
-                continue;
+            if (m == null) continue;
             String role = m.getRole() == null ? "unknown" : m.getRole().trim();
             String text = m.getText() == null ? "" : m.getText().trim();
-            if (text.isEmpty())
-                continue;
+            if (text.isEmpty()) continue;
             sb.append(role).append(": ").append(text).append("\n");
         }
         return sb.toString().trim();
@@ -106,7 +139,8 @@ public class ChatbotService {
             List<ChatMessage> storedHistory,
             List<ChatMessage> historyFromClient,
             String question,
-            String answer) {
+            String answer
+    ) {
         if ((storedHistory == null || storedHistory.isEmpty())
                 && historyFromClient != null && !historyFromClient.isEmpty()) {
             chatHistoryStore.appendAll(sessionId, historyFromClient);

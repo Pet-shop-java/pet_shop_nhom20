@@ -11,12 +11,15 @@ import com.webpet_nhom20.backdend.exception.AppException;
 import com.webpet_nhom20.backdend.exception.ErrorCode;
 import com.webpet_nhom20.backdend.mapper.ProductVariantMapper;
 import com.webpet_nhom20.backdend.repository.ProductImageRepository;
+import com.webpet_nhom20.backdend.repository.ProductRepository;
 import com.webpet_nhom20.backdend.repository.ProductVariantImageRepository;
 import com.webpet_nhom20.backdend.repository.ProductVariantRepository;
 import com.webpet_nhom20.backdend.service.ProductVariantService;
+import org.apache.commons.math3.stat.descriptive.summary.Product;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -30,6 +33,8 @@ public class ProductVariantServiceImpl implements ProductVariantService {
     private ProductVariantImageRepository productVariantImageRepository;
     @Autowired
     private ProductImageRepository productImageRepository;
+    @Autowired
+    private ProductRepository productRepository;
 
     @PreAuthorize("hasRole('SHOP')")
     @Override
@@ -71,44 +76,33 @@ public class ProductVariantServiceImpl implements ProductVariantService {
             int variantId,
             UpdateProductVariantRequest request
     ) {
-        //  Lấy variant
+        // 1. Lấy variant
         ProductVariants variant = repository.findById(variantId)
                 .orElseThrow(() -> new AppException(ErrorCode.VARIANT_NOT_FOUND));
 
-        //  Update thông tin cơ bản của variant
+        // 2. Update thông tin cơ bản
         mapper.updateProductVariant(variant, request);
 
-        //  Nếu có gửi danh sách imageIds thì mới xử lý ảnh
+        // 3. Xử lý ảnh (giữ nguyên)
         if (request.getImageIds() != null) {
-
-            // Danh sách image hiện tại của variant trong DB
-            List<ProductVariantImage> currentLinks =
-                    productVariantImageRepository.findByVariantId(variantId);
-
-            List<Integer> currentImageIds = currentLinks.stream()
-                    .map(pvi -> pvi.getImage().getId())
-                    .toList();
-
+            List<ProductVariantImage> currentLinks = productVariantImageRepository.findByVariantId(variantId);
+            List<Integer> currentImageIds = currentLinks.stream().map(pvi -> pvi.getImage().getId()).toList();
             List<Integer> newImageIds = request.getImageIds();
 
-            // 3.1 XÓA những ảnh bị BỎ CHỌN
+            // XÓA ảnh
             List<ProductVariantImage> toDelete = currentLinks.stream()
                     .filter(pvi -> !newImageIds.contains(pvi.getImage().getId()))
                     .toList();
-
             if (!toDelete.isEmpty()) {
                 productVariantImageRepository.deleteAll(toDelete);
             }
 
-            // 3.2 THÊM những ảnh MỚI được CHỌN
+            // THÊM ảnh
             List<Integer> imageIdsToAdd = newImageIds.stream()
                     .filter(id -> !currentImageIds.contains(id))
                     .toList();
-
             if (!imageIdsToAdd.isEmpty()) {
-                List<ProductImages> imagesToAdd =
-                        productImageRepository.findAllById(imageIdsToAdd);
-
+                List<ProductImages> imagesToAdd = productImageRepository.findAllById(imageIdsToAdd);
                 List<ProductVariantImage> newLinks = imagesToAdd.stream()
                         .map(img -> {
                             ProductVariantImage pvi = new ProductVariantImage();
@@ -117,19 +111,36 @@ public class ProductVariantServiceImpl implements ProductVariantService {
                             return pvi;
                         })
                         .toList();
-
                 productVariantImageRepository.saveAll(newLinks);
             }
         }
 
-        // Lưu variant
+        // 4. Lưu variant
         ProductVariants saved = repository.save(variant);
 
-        // Trả response
+        // 5. LOGIC MỚI: Dùng Query DB để tránh lỗi ConcurrentModificationException
+        Products product = saved.getProduct();
+        if (product != null) {
+            // Đếm xem còn variant nào KHÁC đang active không
+            long otherActiveCount = repository.countOtherActiveVariants(product.getId(), variantId);
+
+            // Kiểm tra trạng thái của variant HIỆN TẠI
+            boolean currentIsActive = "0".equals(saved.getIsDeleted());
+
+            // Nếu không còn variant nào khác active VÀ variant hiện tại cũng bị xóa
+            if (otherActiveCount == 0 && !currentIsActive) {
+                product.setIsDeleted("1");
+            } else {
+                // Ngược lại, nếu còn ít nhất 1 cái active (hoặc cái hiện tại active) -> Product active
+                product.setIsDeleted("0");
+            }
+            productRepository.save(product);
+        }
+
         return mapper.toProductVariantResponse(saved);
     }
 
-
+    @Transactional
     @Override
     public String deleteProductVariant(int variantId) {
         ProductVariants product_variants = repository.findById(variantId).orElseThrow(() -> new AppException(ErrorCode.VARIANT_NOT_FOUND));
@@ -138,6 +149,15 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         }
         product_variants.setIsDeleted("1");
         repository.save(product_variants);
+        Products product = product_variants.getProduct();
+        if (product != null) {
+            boolean allDeleted = product.getProduct_variants().stream()
+                    .allMatch(v -> "1".equals(v.getIsDeleted()));
+            if (allDeleted) {
+                product.setIsDeleted("1");
+                productRepository.save(product);
+            }
+        }
         return "Xóa thành công";
     }
 }

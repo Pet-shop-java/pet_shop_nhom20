@@ -30,6 +30,7 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariants,
     WHERE pv.id = :id
 """)
     boolean isDeleted(@Param("id") Integer id);
-
+    @Query("SELECT COUNT(v) FROM ProductVariants v WHERE v.product.id = :productId AND v.isDeleted = '0' AND v.id <> :variantId")
+    long countOtherActiveVariants(@Param("productId") int productId, @Param("variantId") int variantId);
 
 }

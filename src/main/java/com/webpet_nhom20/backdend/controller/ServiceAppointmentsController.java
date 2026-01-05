@@ -1,6 +1,9 @@
 package com.webpet_nhom20.backdend.controller;
 
-import com.webpet_nhom20.backdend.dto.request.ServiceAppointment.*;
+import com.webpet_nhom20.backdend.dto.request.ServiceAppointment.CancelServiceAppointmentRequest;
+import com.webpet_nhom20.backdend.dto.request.ServiceAppointment.ServiceAppointmentsRequest;
+import com.webpet_nhom20.backdend.dto.request.ServiceAppointment.UpdateServiceAppointmentRequest;
+import com.webpet_nhom20.backdend.dto.request.ServiceAppointment.UserServiceAppointmentRequest;
 import com.webpet_nhom20.backdend.dto.response.ApiResponse;
 import com.webpet_nhom20.backdend.dto.response.ServiceAppointment.ServiceAppointmentsResponse;
 import com.webpet_nhom20.backdend.service.ServicesAppointmentsService;
@@ -11,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,23 +41,6 @@ public class ServiceAppointmentsController {
                         .build()
         );
     }
-    @PostMapping("/admin-email")
-    @PreAuthorize("hasRole('SHOP')")
-    public ResponseEntity<ApiResponse<ServiceAppointmentsResponse>> createAppointmentAdmin(
-            @Valid @RequestBody AdminCreateServiceAppointmentRequest request
-    ) {
-        ServiceAppointmentsResponse response = servicesAppointmentsService.createByEmail(request);
-
-        return ResponseEntity.ok(
-                ApiResponse.<ServiceAppointmentsResponse>builder()
-                        .code(1000)
-                        .success(true)
-                        .message("Tạo lịch hẹn thành công")
-                        .result(response)
-                        .build()
-        );
-    }
-
 
     @PostMapping("/list")
     public ResponseEntity<ApiResponse<List<ServiceAppointmentsResponse>>> getAppointmentsByRole(

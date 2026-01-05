@@ -1,7 +1,10 @@
 package com.webpet_nhom20.backdend.service.Impl;
 
 import com.webpet_nhom20.backdend.config.JwtTokenProvider;
-import com.webpet_nhom20.backdend.dto.request.ServiceAppointment.*;
+import com.webpet_nhom20.backdend.dto.request.ServiceAppointment.CancelServiceAppointmentRequest;
+import com.webpet_nhom20.backdend.dto.request.ServiceAppointment.ServiceAppointmentsRequest;
+import com.webpet_nhom20.backdend.dto.request.ServiceAppointment.UpdateServiceAppointmentRequest;
+import com.webpet_nhom20.backdend.dto.request.ServiceAppointment.UserServiceAppointmentRequest;
 import com.webpet_nhom20.backdend.dto.response.ServiceAppointment.ServiceAppointmentsResponse;
 import com.webpet_nhom20.backdend.entity.BookingTime;
 import com.webpet_nhom20.backdend.entity.ServiceAppointments;
@@ -40,115 +43,6 @@ public class ServicesAppointmentsServiceImpl implements ServicesAppointmentsServ
     private final AsyncEmailService asyncEmailService;
     private final JwtTokenProvider jwtTokenProvider;
     private final BookingTimeRepository bookingTimeRepository;
-
-    @Override
-    @Transactional
-    public ServiceAppointmentsResponse createByEmail(
-            AdminCreateServiceAppointmentRequest request
-    ) {
-
-        // 1️⃣ LOCK booking_time
-        BookingTime bookingTime =
-                bookingTimeRepository.findByIdForUpdate(
-                        request.getBookingTimeId()
-                ).orElseThrow(() ->
-                        new RuntimeException("BookingTime không tồn tại"));
-
-        ServicesPet service = bookingTime.getService();
-
-        // 2️⃣ Check rule: phải đặt trước cutoff
-        LocalDateTime slotStart =
-                bookingTime.getSlotDate()
-                        .atTime(bookingTime.getStartTime());
-
-        int bookingCutoffMinutes = 30;
-
-        LocalDateTime cutoffTime =
-                slotStart.minusMinutes(bookingCutoffMinutes);
-
-        if (!LocalDateTime.now().isBefore(cutoffTime)) {
-            throw new RuntimeException(
-                    "Lịch đã đóng, lịch phải được đặt trước ít nhất "
-                            + bookingCutoffMinutes + " phút"
-            );
-        }
-
-        // 3️⃣ Check capacity
-        if (bookingTime.getAvailableCount() <= 0) {
-            throw new RuntimeException("Slot đã hết chỗ");
-        }
-
-        // 4️⃣ Load USER từ EMAIL + role = customer
-        User user = userRepository
-                .findByEmailAndRoleName(
-                        request.getEmail(),
-                        "CUSTOMER"
-                )
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Không tìm thấy customer với email này"
-                        ));
-
-        // 5️⃣ Map entity (mapper thủ công – GIỮ NGUYÊN)
-        ServiceAppointments appointment = new ServiceAppointments();
-
-        appointment.setService(bookingTime.getService());
-        appointment.setBookingTime(bookingTime);
-        appointment.setUser(user);
-
-        appointment.setNamePet(request.getNamePet());
-        appointment.setSpeciePet(request.getSpeciePet());
-        appointment.setNotes(request.getNotes());
-
-        LocalDateTime start =
-                bookingTime.getSlotDate()
-                        .atTime(bookingTime.getStartTime());
-
-        LocalDateTime end =
-                bookingTime.getSlotDate()
-                        .atTime(bookingTime.getEndTime());
-
-        appointment.setAppointmentStart(start);
-        appointment.setAppointmentEnd(end);
-        appointment.setStatus(AppoinmentStatus.SCHEDULED);
-
-        // 6️⃣ Trừ slot
-        bookingTime.setBookedCount(
-                bookingTime.getBookedCount() + 1
-        );
-        // availableCount update bằng @PreUpdate
-
-        // 7️⃣ Save appointment
-        ServiceAppointments saved =
-                servicesAppointmentsRepository.save(appointment);
-
-        // 8️⃣ Gửi mail (GIỮ NGUYÊN)
-        try {
-            String subject =
-                    CommonUtil.buildAppointmentEmailSubject(
-                            saved,
-                            user.getFullName(),
-                            user.getPhone()
-                    );
-
-            String html =
-                    CommonUtil.buildAppointmentEmailHtml(
-                            saved,
-                            user.getFullName(),
-                            user.getPhone(),
-                            service.getTitle()
-                    );
-
-            asyncEmailService.sendAppointmentEmail(
-                    user.getEmail(),
-                    subject,
-                    html
-            );
-        } catch (Exception ignored) {}
-
-        // 9️⃣ Response
-        return mapToResponse(saved);
-    }
 
     @Override
     @Transactional
@@ -495,7 +389,6 @@ public class ServicesAppointmentsServiceImpl implements ServicesAppointmentsServ
         r.setServiceName(a.getService().getTitle());
         r.setBookingTimeId(a.getBookingTime().getId());
         r.setUserId(a.getUser().getId());
-        r.setEmail(a.getUser().getEmail());
         r.setNamePet(a.getNamePet());
         r.setSpeciePet(a.getSpeciePet());
         r.setAppointmentStart(a.getAppointmentStart());

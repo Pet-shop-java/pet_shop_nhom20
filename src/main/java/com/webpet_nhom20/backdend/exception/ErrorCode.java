@@ -24,7 +24,6 @@ public enum ErrorCode {
     IDENTIFIER_NOT_BLANK(1103, "Tên đăng nhập hoặc email không được để trống", HttpStatus.BAD_REQUEST),
     TOKEN_NOT_BLANK(1104, "Token không được để trống", HttpStatus.BAD_REQUEST),
     IS_EMPTY(1105,"Danh sách rỗng",HttpStatus.BAD_REQUEST),
-    EMAIL_NOT_FOUND(1106,"Email không tồn tại",HttpStatus.NOT_FOUND),
     // ===== LỖI NGƯỜI DÙNG (1200-1299) =====
     // Validation lỗi rỗng
     USERNAME_NOT_BLANK(1200, "Tên đăng nhập không được để trống", HttpStatus.BAD_REQUEST),
@@ -111,7 +110,6 @@ public enum ErrorCode {
     SERVICE_NOT_FOUND(1806, "Dịch vụ không tồn tại", HttpStatus.NOT_FOUND),
     SERVICE_ID_NOT_NULL(1807, "ID dịch vụ không được để trống", HttpStatus.BAD_REQUEST),
     SERVICE_TITLE_ALREADY_EXISTS(1814, "Tiêu đề dịch vụ đã tồn tại", HttpStatus.BAD_REQUEST),
-    CUSTOMER_NOT_FOUND(1815, "Khách hàng không tồn tại", HttpStatus.NOT_FOUND),
 
     // Validation mới cho Service Pet
     SERVICE_NAME_SIZE_INVALID(1808, "Tên dịch vụ phải từ 1-255 ký tự", HttpStatus.BAD_REQUEST),
@@ -181,7 +179,6 @@ public enum ErrorCode {
     //Adopt(2500-2599)
     ADOPT_NOT_FOUND(2500,"Yêu cầu nhận nuôi không tồn tại",HttpStatus.NOT_FOUND),
     CANNOT_CANCEL_ADOPT(2501,"Không thể hủy yêu cầu nhận nuôi này",HttpStatus.BAD_REQUEST)
-
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

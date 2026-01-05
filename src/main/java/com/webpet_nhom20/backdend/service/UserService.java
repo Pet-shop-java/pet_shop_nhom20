@@ -7,7 +7,7 @@ import com.webpet_nhom20.backdend.dto.response.User.UserResponse;
 
 import java.util.List;
 
-public interface UserService {
+public interface UserService  {
 
     public UserResponse createUser(UserCreationRequest request, String otp);
 
@@ -21,7 +21,5 @@ public interface UserService {
 
     public String changeUserPassword(int userId, ChangePasswordUserRequest request);
 
-    // Search emails by keyword for autocomplete
-    public List<String> searchEmailsByKeyword(String keyword);
 
 }

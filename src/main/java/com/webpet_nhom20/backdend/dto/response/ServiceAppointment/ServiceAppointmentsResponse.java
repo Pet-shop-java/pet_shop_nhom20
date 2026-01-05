@@ -30,7 +30,6 @@ public class ServiceAppointmentsResponse {
     private LocalTime endTime;
     /* ===== USER ===== */
     private int userId;
-    private String email;
     /* ===== PET INFO ===== */
     private String namePet;
     private String speciePet;

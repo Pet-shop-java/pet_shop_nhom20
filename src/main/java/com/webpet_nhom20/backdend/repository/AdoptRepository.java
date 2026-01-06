@@ -126,7 +126,8 @@ WHERE a.id = :adoptId AND a.isDeleted = '0'
     void cancelOtherAdopts(@Param("petId") Integer petId,
                            @Param("adoptId") Integer adoptId);
 
-
+    @Query("SELECT a.userId FROM Adopt a WHERE a.id = :adoptId")
+    Integer findUserIdByAdoptId(@Param("adoptId") Integer adoptId);
 
 
 

@@ -2,6 +2,8 @@ package com.webpet_nhom20.backdend.repository;
 
 import com.webpet_nhom20.backdend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -23,4 +25,6 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     // Search users by email keyword for autocomplete
     List<User> findByEmailContainingIgnoreCaseAndRoleName(String email, String roleName);
+    @Query("SELECT u.email FROM User u WHERE u.id = :userId")
+    Optional<String> findEmailByUserId(@Param("userId") Integer userId);
 }

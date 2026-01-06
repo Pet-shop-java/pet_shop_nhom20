@@ -24,12 +24,13 @@ public class EmailServiceImpl implements EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "UTF-8");
             helper.setTo(toEmail);
             helper.setSubject(subject);
-            helper.setText(htmlBody, true);
+            helper.setText(htmlBody, true); // true = HTML mode
+            System.out.println(">>> EmailServiceImpl sending to: " + toEmail);
             mailSender.send(mimeMessage);
+            System.out.println(">>> EmailServiceImpl SENT successfully to: " + toEmail);
         } catch (MessagingException e) {
-            // fallback: try plain text if HTML fails
+            e.printStackTrace();
+            throw new RuntimeException("Không thể gửi email: " + e.getMessage(), e);
         }
     }
 }
-
-

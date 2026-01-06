@@ -1,6 +1,7 @@
 package com.webpet_nhom20.backdend.repository;
 
 import com.webpet_nhom20.backdend.dto.response.Product.BrandResponse;
+import com.webpet_nhom20.backdend.entity.PetImages;
 import com.webpet_nhom20.backdend.entity.Pets;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -58,4 +59,6 @@ public interface PetRepository extends JpaRepository<Pets, Integer> {
             @Param("petId") int petId,
             @Param("status") String status
     );
+
+
 }

@@ -3,6 +3,7 @@ package com.webpet_nhom20.backdend.service.Impl;
 import com.webpet_nhom20.backdend.dto.request.Pet.FullPetCreationRequest;
 import com.webpet_nhom20.backdend.dto.request.Pet.PetCreationRequest;
 import com.webpet_nhom20.backdend.dto.request.Pet.PetUpdateRequest;
+import com.webpet_nhom20.backdend.dto.request.PetImage.PetImageCreationDto;
 import com.webpet_nhom20.backdend.dto.request.Product.FullProductCreateRequest;
 import com.webpet_nhom20.backdend.dto.request.Product_Variant.VariantCreateDto;
 import com.webpet_nhom20.backdend.dto.response.Pet.FullPetCreateResponse;
@@ -24,6 +25,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +80,7 @@ public class PetServiceImpl implements PetService {
                 .createdDate(savedPet.getCreatedDate())
                 .build();
     }
+
     @Override
     @Transactional
     @PreAuthorize("hasRole('SHOP')")
@@ -105,8 +108,7 @@ public class PetServiceImpl implements PetService {
                         .vaccinated(request.getVaccinated())
                         .neutered(request.getNeutered())
                         .isDeleted("0")
-                        .build()
-        );
+                        .build());
 
         for (int i = 0; i < request.getImages().size(); i++) {
             var imageDto = request.getImages().get(i);
@@ -115,7 +117,7 @@ public class PetServiceImpl implements PetService {
                     .pet(savedPet)
                     .imageUrl(imageDto.getImageUrl())
                     .publicId(imageDto.getPublicId())
-                    .imagePosition(i)          // thứ tự hiển thị
+                    .imagePosition(i) // thứ tự hiển thị
                     .isPrimary(i == 0 ? 1 : 0) // ảnh đầu tiên là primary
                     .isDeleted("0")
                     .build();
@@ -128,6 +130,7 @@ public class PetServiceImpl implements PetService {
                 .message("Tạo thú cưng thành công")
                 .build();
     }
+
     private PetResponse mapToPesResponse(Pets pet) {
         PetResponse response = PetResponse.builder()
                 .id(pet.getId())
@@ -148,7 +151,7 @@ public class PetServiceImpl implements PetService {
                 .updatedDate(pet.getUpdatedDate())
                 .build();
 
-        List<PetImages> images = petImageRepository.findByPetId(pet.getId());
+        List<PetImages> images = petImageRepository.findByPetIdAndIsDeleted(pet.getId(), "0");
         List<PetImageResponse> imageResponses = images.stream()
                 .map(image -> PetImageResponse.builder()
                         .id(image.getId())
@@ -164,8 +167,10 @@ public class PetServiceImpl implements PetService {
         response.setImages(imageResponses);
         return response;
     }
+
     @Override
-    public Page<PetResponse> getAllPets(String isDeleted, String animal, Float minWeight, Float maxWeight, String ageGroup, Pageable pageable, String status) {
+    public Page<PetResponse> getAllPets(String isDeleted, String animal, Float minWeight, Float maxWeight,
+            String ageGroup, Pageable pageable, String status) {
         // 1️⃣ Chuẩn hóa điều kiện filter
         boolean hasAnimal = animal != null && !animal.isBlank();
         // Không cần check hasWeight nữa vì ta truyền thẳng null vào query
@@ -188,8 +193,7 @@ public class PetServiceImpl implements PetService {
         Pageable dbPageable = PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),
-                Sort.by(dbOrders)
-        );
+                Sort.by(dbOrders));
 
         // 3️⃣ Query DB
         Page<Pets> petPage = petRepository.findAllWithFilters(
@@ -199,8 +203,7 @@ public class PetServiceImpl implements PetService {
                 hasAgeGroup ? ageGroup : null,
                 hasStatus ? status : null,
                 hasIsDeleted ? isDeleted : null,
-                dbPageable
-        );
+                dbPageable);
 
         // 4️⃣ Map Entity → Response
         List<PetResponse> responses = petPage.getContent()
@@ -210,14 +213,17 @@ public class PetServiceImpl implements PetService {
 
         return new PageImpl<>(responses, pageable, petPage.getTotalElements());
     }
+
     @Override
     public List<String> getAnimalForCustomer() {
         return petRepository.getAnimalForCustomer();
     }
+
     @Override
     public List<String> getAnimalForAdmin() {
         return petRepository.getAnimalForAdmin();
     }
+
     @Override
     public void deletePet(int petId) {
         Pets pet = petRepository.findById(petId)
@@ -227,29 +233,37 @@ public class PetServiceImpl implements PetService {
         pet.setUpdatedDate(java.sql.Timestamp.valueOf(LocalDateTime.now()));
         petRepository.save(pet);
     }
+
     @Override
     public void restorePet(int petId) {
         Pets pet = petRepository.findById(petId)
                 .orElseThrow(() -> new AppException(ErrorCode.PET_NOT_FOUND));
-        if("ADOPTED".equals(pet.getStatus())){
+        if ("ADOPTED".equals(pet.getStatus())) {
             throw new AppException(ErrorCode.CANNOT_RESTORE_PET_ADOPTED);
         }
         pet.setIsDeleted("0");
         pet.setUpdatedDate(java.sql.Timestamp.valueOf(LocalDateTime.now()));
         petRepository.save(pet);
     }
+
     @Override
     public PetResponse getPetById(int petId) {
         Pets pet = petRepository.findById(petId)
                 .orElseThrow(() -> new AppException(ErrorCode.PET_NOT_FOUND));
         return mapToPesResponse(pet);
     }
+
     @Override
-    @PreAuthorize("hasRole('SHOP')")
     @Transactional
+    @PreAuthorize("hasRole('SHOP')")
     public PetResponse updatePet(int petId, PetUpdateRequest request) {
+
         Pets pet = petRepository.findById(petId)
                 .orElseThrow(() -> new AppException(ErrorCode.PET_NOT_FOUND));
+
+        // =========================
+        // 1️⃣ UPDATE PET INFO
+        // =========================
         pet.setName(request.getName());
         pet.setAnimal(request.getAnimal());
         pet.setBreed(request.getBreed());
@@ -261,8 +275,61 @@ public class PetServiceImpl implements PetService {
         pet.setHealthStatus(request.getHealthStatus());
         pet.setVaccinated(request.getVaccinated());
         pet.setNeutered(request.getNeutered());
-        pet.setUpdatedDate(java.sql.Timestamp.valueOf(LocalDateTime.now()));
-        Pets updatedPet = petRepository.save(pet);
-        return mapToPesResponse(updatedPet);
+        pet.setIsDeleted(request.getIsDeleted());
+
+        petRepository.save(pet);
+
+        // =========================
+        // 2️⃣ XOÁ ẢNH CŨ (SOFT DELETE)
+        // =========================
+        if (request.getDeletedImageIds() != null
+                && !request.getDeletedImageIds().isEmpty()) {
+
+            petImageRepository.softDeleteImages(request.getDeletedImageIds());
+        }
+
+        // =========================
+        // 3️⃣ RESET PRIMARY
+        // =========================
+        List<PetImages> existingImages = petImageRepository.findByPetIdAndIsDeleted(petId, "0");
+
+        for (PetImages img : existingImages) {
+            img.setIsPrimary(0);
+        }
+        petImageRepository.saveAll(existingImages);
+
+        // =========================
+        // 3.5️⃣ SET PRIMARY CHO ẢNH ĐÃ CÓ (NẾU CÓ)
+        // =========================
+        if (request.getPrimaryImageId() != null) {
+            for (PetImages img : existingImages) {
+                if (img.getId() == request.getPrimaryImageId().intValue()) {
+                    img.setIsPrimary(1);
+                    petImageRepository.save(img);
+                    break;
+                }
+            }
+        }
+
+        // =========================
+        // 4️⃣ THÊM ẢNH MỚI
+        // =========================
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            for (PetImageCreationDto dto : request.getImages()) {
+                PetImages image = PetImages.builder()
+                        .pet(pet)
+                        .imageUrl(dto.getImageUrl())
+                        .publicId(dto.getPublicId())
+                        .imagePosition(dto.getImagePosition())
+                        .isPrimary(dto.isPrimary() ? 1 : 0)
+                        .isDeleted("0")
+                        .build();
+
+                petImageRepository.save(image);
+            }
+        }
+
+        return mapToPesResponse(pet);
     }
+
 }

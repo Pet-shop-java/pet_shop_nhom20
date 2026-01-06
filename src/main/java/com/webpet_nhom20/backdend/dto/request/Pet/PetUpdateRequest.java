@@ -1,4 +1,5 @@
 package com.webpet_nhom20.backdend.dto.request.Pet;
+
 import com.webpet_nhom20.backdend.dto.request.PetImage.PetImageCreationDto;
 import com.webpet_nhom20.backdend.dto.request.Product_Image.ImageCreateDto;
 import jakarta.validation.Valid;
@@ -36,6 +37,7 @@ public class PetUpdateRequest {
 
     @Size(max = 100, message = "Giới tính tối đa 100 ký tự")
     private String gender;
+    private String isDeleted;
 
     @NotBlank(message = "Mô tả không được để trống")
     private String description;
@@ -48,6 +50,9 @@ public class PetUpdateRequest {
 
     @NotNull(message = "Trạng thái triệt sản không được để trống")
     private String neutered;
+    private List<Integer> deletedImageIds;
+    private Integer primaryImageId; // ID of existing image to set as primary
+    @Valid // Kích hoạt validation cho các đối tượng bên trong List
+    private List<PetImageCreationDto> images;
 
 }
-

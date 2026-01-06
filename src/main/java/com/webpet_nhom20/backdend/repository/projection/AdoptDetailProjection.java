@@ -22,7 +22,7 @@ public interface AdoptDetailProjection {
     String getAnimal();
     String getBreed();
     Integer getAge();
-    String getSize();
+    Float getWeight();
     String getGender();
     String getPetImage();
 

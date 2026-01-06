@@ -30,7 +30,7 @@ public class AdoptDetailResponse {
         private String animal;
         private String breed;
         private Integer age;
-        private String size;
+        private Float weight;
         private String gender;
         private String image;
     }

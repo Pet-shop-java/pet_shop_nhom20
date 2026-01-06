@@ -1,6 +1,7 @@
 package com.webpet_nhom20.backdend.repository;
 
 import com.webpet_nhom20.backdend.dto.response.Product.BrandResponse;
+import com.webpet_nhom20.backdend.entity.PetImages;
 import com.webpet_nhom20.backdend.entity.Pets;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,14 +23,16 @@ public interface PetRepository extends JpaRepository<Pets, Integer> {
     @Query("""
     SELECT p FROM Pets p
     WHERE (:animal IS NULL OR p.animal = :animal)
-    AND (:size IS NULL OR p.size = :size)
+    AND (:minWeight IS NULL OR p.weight >= :minWeight)
+    AND (:maxWeight IS NULL OR p.weight <= :maxWeight)
     AND (:ageGroup IS NULL OR p.ageGroup = :ageGroup)
     AND (:status IS NULL OR p.status = :status)
     AND (:isDelete IS NULL OR p.isDeleted = :isDelete)
     """)
     Page<Pets> findAllWithFilters(
             @Param("animal") String animal,
-            @Param("size") String size,
+            @Param("minWeight") Float minWeight,
+            @Param("maxWeight") Float maxWeight,
             @Param("ageGroup") String ageGroup,
             @Param("status") String status,
             @Param("isDelete") String isDelete,
@@ -56,4 +59,6 @@ public interface PetRepository extends JpaRepository<Pets, Integer> {
             @Param("petId") int petId,
             @Param("status") String status
     );
+
+
 }

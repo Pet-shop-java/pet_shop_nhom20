@@ -146,6 +146,7 @@ public interface ProductRepository extends JpaRepository<Products,Integer>, JpaS
     boolean existsByNameIgnoreCase(String name);
 
     boolean existsByName(String name);
-
+    @Query("SELECT DISTINCT p.animal FROM Products p WHERE p.isDeleted = '0'")
+    List<String> findDistinctAnimals();
 
 }

@@ -119,4 +119,13 @@ public class ProductController {
                 .result(brands)
                 .build();
     }
+    @GetMapping("/animals")
+    public ApiResponse<List<String>> getAnimalList() {
+        List<String> animals = productService.getAnimalList();
+        return ApiResponse.<List<String>>builder()
+                .success(true)
+                .message("Lấy danh sách loại động vật thành công")
+                .result(animals)
+                .build();
+    }
 }

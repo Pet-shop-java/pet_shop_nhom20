@@ -420,6 +420,10 @@ public class ProductServiceImpl implements ProductService {
 
         return response;
     }
+    @Override
+    public List<String> getAnimalList() {
+        return productRepository.findDistinctAnimals();
+    }
 
 
 

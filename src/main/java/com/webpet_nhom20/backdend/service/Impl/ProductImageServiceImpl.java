@@ -5,13 +5,14 @@ import com.webpet_nhom20.backdend.dto.request.Product_Image.UpdateProductImageRe
 import com.webpet_nhom20.backdend.dto.response.Cloudinary.CloudinaryResponse;
 import com.webpet_nhom20.backdend.dto.response.ProductImage.ProductImageResponse;
 import com.webpet_nhom20.backdend.entity.ProductImages;
-import com.webpet_nhom20.backdend.entity.ProductVariants;
+import com.webpet_nhom20.backdend.entity.ProductVariantImage;
 import com.webpet_nhom20.backdend.entity.Products;
 import com.webpet_nhom20.backdend.exception.AppException;
 import com.webpet_nhom20.backdend.exception.ErrorCode;
 import com.webpet_nhom20.backdend.mapper.ProductImageMapper;
 import com.webpet_nhom20.backdend.repository.ProductImageRepository;
 import com.webpet_nhom20.backdend.repository.ProductRepository;
+import com.webpet_nhom20.backdend.repository.ProductVariantImageRepository;
 import com.webpet_nhom20.backdend.service.CloudinaryService;
 import com.webpet_nhom20.backdend.service.ProductImageService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,9 @@ import java.util.Optional;
 @Service
 public class ProductImageServiceImpl implements ProductImageService {
     @Autowired
-    private ProductImageRepository repository;
+    private ProductImageRepository productImageRepository;
+    @Autowired
+    private ProductVariantImageRepository productVariantImageRepository;
     @Autowired
     private ProductImageMapper mapper;
     @Autowired
@@ -48,7 +51,7 @@ public class ProductImageServiceImpl implements ProductImageService {
             image.setImageUrl(req.getImageUrl());
             image.setPosition(position++);
 
-            ProductImages saved = repository.save(image);
+            ProductImages saved = productImageRepository.save(image);
             responses.add(mapper.toProductImageResponse(saved));
         }
 
@@ -72,7 +75,7 @@ public class ProductImageServiceImpl implements ProductImageService {
         }
 
         // Lấy position cao nhất hiện tại của product này (chỉ 1 lần)
-        List<ProductImages> existingImages = repository.findByProductId(productId);
+        List<ProductImages> existingImages = productImageRepository.findByProductId(productId);
         int maxExistingPosition = existingImages.stream()
                 .mapToInt(ProductImages::getPosition)
                 .max()
@@ -139,7 +142,7 @@ public class ProductImageServiceImpl implements ProductImageService {
             image.setIsDeleted("0");
             image.setIsPrimary(0); // Tất cả isPrimary đều là 0
 
-            ProductImages saved = repository.save(image);
+            ProductImages saved = productImageRepository.save(image);
             responses.add(mapper.toProductImageResponse(saved));
         }
 
@@ -149,13 +152,13 @@ public class ProductImageServiceImpl implements ProductImageService {
     @PreAuthorize("hasRole('SHOP')")
     @Override
     public ProductImageResponse updateProductImage(int ImageId, UpdateProductImageRequest request) {
-        ProductImages product_images = repository.findById(ImageId)
+        ProductImages product_images = productImageRepository.findById(ImageId)
                 .orElseThrow(() -> new AppException(ErrorCode.IMAGE_NOT_FOUND));
         
         // Kiểm tra nếu request muốn set isPrimary = 1
         if (request.getIsPrimary() != null && request.getIsPrimary().equals("1")) {
             // Tìm xem đã có ảnh primary khác cho product này chưa (không tính ảnh hiện tại)
-            Optional<ProductImages> existingPrimaryImage = repository.findByProductIdAndIsPrimary(
+            Optional<ProductImages> existingPrimaryImage = productImageRepository.findByProductIdAndIsPrimary(
                     product_images.getProduct().getId(), 1);
             
             // Nếu có ảnh primary và không phải là ảnh hiện tại đang update
@@ -184,17 +187,18 @@ public class ProductImageServiceImpl implements ProductImageService {
         // Update các trường
         mapper.updateProductImage(product_images, request);
         
-        return mapper.toProductImageResponse(repository.save(product_images));
+        return mapper.toProductImageResponse(productImageRepository.save(product_images));
     }
 
     @Override
     public String deleteProductImage(int imageId) {
-        ProductImages product_images = repository.findById(imageId).orElseThrow(() -> new AppException(ErrorCode.IMAGE_NOT_FOUND));
-        if(product_images.getIsDeleted().equals("1")){
-            return "Sản phẩm đã bị xóa trước đó";
+        ProductImages product_images = productImageRepository.findById(imageId).orElseThrow(() -> new AppException(ErrorCode.IMAGE_NOT_FOUND));
+        Optional<ProductVariantImage> productVariantImage = productVariantImageRepository.findByImageId(imageId);
+        if(productVariantImage.isPresent()){
+            productVariantImageRepository.delete(productVariantImage.get());
         }
         product_images.setIsDeleted("1");
-        repository.save(product_images);
+        productImageRepository.save(product_images);
         return "Xóa thành công";
     }
 }

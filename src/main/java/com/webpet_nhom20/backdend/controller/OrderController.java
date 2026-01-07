@@ -52,8 +52,8 @@ public class OrderController {
     @GetMapping()
     public ApiResponse<Page<OrderResponse>> getAllOrderForUser(
             @PageableDefault(sort = "createdDate", direction = Sort.Direction.DESC)
-            Pageable pageable, @RequestParam(required = false) String status) {
-        Page<OrderResponse> orderResponse = orderService.getAllOrderForUser(status, pageable);
+            Pageable pageable, @RequestParam(required = false) String status, @RequestParam(required = false) String orderCode) {
+        Page<OrderResponse> orderResponse = orderService.getAllOrderForUser(status,orderCode, pageable);
         return ApiResponse.<Page<OrderResponse>>builder()
                 .success(true)
                 .message("successfully")

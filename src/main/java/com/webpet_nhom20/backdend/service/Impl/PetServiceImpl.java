@@ -108,6 +108,7 @@ public class PetServiceImpl implements PetService {
                         .vaccinated(request.getVaccinated())
                         .neutered(request.getNeutered())
                         .isDeleted("0")
+                        .status("AVAILABLE")
                         .build());
 
         for (int i = 0; i < request.getImages().size(); i++) {

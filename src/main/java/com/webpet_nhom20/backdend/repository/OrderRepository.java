@@ -26,6 +26,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     Optional<Order> findByOrderCode(String orderCode);
     Page<Order> findAllByUserIdAndStatus(Integer userId, String status,
                                          Pageable pageable);
+    Page<Order> findAllByUserIdAndStatusAndOrderCodeContaining(Integer userId, String status, String orderCode, Pageable pageable);
+    Page<Order> findAllByUserIdAndOrderCodeContaining(Integer userId, String orderCode, Pageable pageable);
     @Query(value = """
         SELECT 
             o.id AS orderPrimaryId,

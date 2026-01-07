@@ -51,9 +51,6 @@ public class ProductServiceImpl implements ProductService {
             key = "'p:' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #categoryId + ':' + (#search?:'') + ':' + (#minPrice?:'') + ':' + (#maxPrice?:'') + ':' + (#animal?:'') + ':' + (#brand?:'') + ':' + (#isFeature?:'') + ':' + (#isDelete?:'')"
     )
     public Page<ProductResponse> getAllProduct(Pageable pageable, Integer categoryId, String search, Double minPrice, Double maxPrice, String animal, String brand, String isFeature, String isDelete) {
-        log.info("getAllProduct called with pageable={}, categoryId={}, search={}, minPrice={}, maxPrice={}, animal={}, brand={}, isFeature={}, isDelete={}",
-                pageable, categoryId, search, minPrice, maxPrice, animal, brand, isFeature, isDelete);
-
         Page<Products> productPage;
 
         boolean hasCategory = categoryId != null && categoryId > 0;
@@ -272,6 +269,7 @@ public class ProductServiceImpl implements ProductService {
                             .imageUrl(imageDto.getImageUrl())
                             .publicId(imageDto.getPublicId())
                             .isPrimary(imageDto.isPrimary() ? 1 : 0)
+                            .isDeleted("0")
                             .position(imageDto.getPosition())
                             .build();
                     return productImageRepository.save(image);
@@ -350,6 +348,7 @@ public class ProductServiceImpl implements ProductService {
 
     // Hàm map Products entity sang ProductResponse DTO
     private ProductResponse mapToProductResponse(Products product) {
+
         ProductResponse response = ProductResponse.builder()
                 .id(product.getId())
                 .categoryId(product.getCategory().getId())
@@ -367,7 +366,10 @@ public class ProductServiceImpl implements ProductService {
                 .updatedDate(product.getUpdatedDate())
                 .build();
 
-        List<ProductImages> images = productImageRepository.findByProductId(product.getId());
+        // ================= PRODUCT IMAGES =================
+        List<ProductImages> images =
+                productImageRepository.findByProductIdAndIsDeleted(product.getId(), "0");
+
         List<ProductImageResponse> imageResponses = images.stream()
                 .map(image -> ProductImageResponse.builder()
                         .id(image.getId())
@@ -379,23 +381,28 @@ public class ProductServiceImpl implements ProductService {
                         .createdDate(image.getCreatedDate())
                         .updatedDate(image.getUpdatedDate())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
+
         response.setProductImage(imageResponses);
 
 
+        // ================= VARIANTS =================
+        List<ProductVariants> variants =
+                productVariantRepository.findByProductId(product.getId());
 
-
-        List<ProductVariants> variants = productVariantRepository.findByProductId(product.getId());
         List<ProductVariantResponse> variantResponses = variants.stream()
                 .map(variant -> {
-                    List<ProductImages> variantImages = productImageRepository.findImagesByVariantId(variant.getId());
 
-                    List<String> imageUrls = variantImages.stream().map(
-                            ProductImages::getImageUrl).toList();
+                    List<ProductImages> variantImages =
+                            productImageRepository.findImagesByVariantId(variant.getId());
+
+                    List<String> imageUrls = variantImages.stream()
+                            .map(ProductImages::getImageUrl)
+                            .toList();
 
                     return ProductVariantResponse.builder()
                             .id(variant.getId())
-                            .productId(variant.getProduct().getId())
+                            .productId(product.getId())
                             .variantName(variant.getVariantName())
                             .weight(variant.getWeight())
                             .price(variant.getPrice())
@@ -408,10 +415,12 @@ public class ProductServiceImpl implements ProductService {
                             .build();
                 })
                 .toList();
+
         response.setProductVariant(variantResponses);
 
         return response;
     }
+
 
 
 }

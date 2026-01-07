@@ -18,7 +18,7 @@ import java.util.List;
 public interface OrderService {
     public OrderResponse createOrder(OrderRequest request);
 
-    public Page<OrderResponse> getAllOrderForUser(String status, Pageable pageable);
+    public Page<OrderResponse> getAllOrderForUser(String status, String orderCode,Pageable pageable);
     public String cancelOrder(String orderCode) throws AppException;
     public void checkStock(CheckStockRequest request) ;
     public List<OrderDetailResponse> getOrderDetails(Integer orderId);

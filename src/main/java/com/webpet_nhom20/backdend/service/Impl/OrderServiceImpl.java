@@ -205,14 +205,20 @@ public class OrderServiceImpl implements OrderService {
 
     @PreAuthorize("hasRole('CUSTOMER')")
     @Override
-    public Page<OrderResponse> getAllOrderForUser(String status, Pageable pageable) {
+    public Page<OrderResponse> getAllOrderForUser(String status, String orderCode, Pageable pageable) {
         Integer userId = userIdFromToken();
         Page<Order> orderPage;
 
         // Logic: Nếu có status thì lọc theo status, không thì lấy tất cả
-        if (status != null) {
+        if(status != null && orderCode != null){
+            orderPage = orderRepository.findAllByUserIdAndStatusAndOrderCodeContaining(userId, status, orderCode, pageable);
+        }
+        else if (status != null) {
             orderPage = orderRepository.findAllByUserIdAndStatus(userId, status, pageable);
-        } else {
+        }else if(orderCode != null){
+            orderPage = orderRepository.findAllByUserIdAndOrderCodeContaining(userId, orderCode, pageable);
+        }
+        else {
             orderPage = orderRepository.findAllByUserId(userId, pageable);
         }
         return orderPage.map(order -> {

@@ -63,6 +63,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private ProductVariantRepository productVariantRepository;
+
     @Override
     @PreAuthorize("hasRole('CUSTOMER')")
 
@@ -79,21 +80,16 @@ public class OrderServiceImpl implements OrderService {
                     .findByIdForUpdate((long) itemReq.getProductVariantId())
                     .orElseThrow(() -> new RuntimeException("Product variant not found"));
 
-
             if (variant.getStockQuantity() < itemReq.getQuantity()) {
                 throw new RuntimeException(
                         "Sản phẩm " + variant.getVariantName()
-                                + " chỉ còn " + variant.getStockQuantity()
-                );
+                                + " chỉ còn " + variant.getStockQuantity());
             }
 
-
             variant.setStockQuantity(
-                    variant.getStockQuantity() - itemReq.getQuantity()
-            );
+                    variant.getStockQuantity() - itemReq.getQuantity());
             variant.setSoldQuantity(
-                    variant.getSoldQuantity() + itemReq.getQuantity()
-            );
+                    variant.getSoldQuantity() + itemReq.getQuantity());
 
             productVariantRepository.save(variant);
             variantMap.put(variant.getId(), variant);
@@ -145,8 +141,6 @@ public class OrderServiceImpl implements OrderService {
         order.setShippingAddress(request.getShippingAddress());
         order.setIsDeleted("0");
         order.setNote(request.getNote());
-
-
 
         Order savedOrder = orderRepository.save(order);
 
@@ -202,7 +196,6 @@ public class OrderServiceImpl implements OrderService {
         return response;
     }
 
-
     @PreAuthorize("hasRole('CUSTOMER')")
     @Override
     public Page<OrderResponse> getAllOrderForUser(String status, String orderCode, Pageable pageable) {
@@ -210,15 +203,14 @@ public class OrderServiceImpl implements OrderService {
         Page<Order> orderPage;
 
         // Logic: Nếu có status thì lọc theo status, không thì lấy tất cả
-        if(status != null && orderCode != null){
-            orderPage = orderRepository.findAllByUserIdAndStatusAndOrderCodeContaining(userId, status, orderCode, pageable);
-        }
-        else if (status != null) {
+        if (status != null && orderCode != null) {
+            orderPage = orderRepository.findAllByUserIdAndStatusAndOrderCodeContaining(userId, status, orderCode,
+                    pageable);
+        } else if (status != null) {
             orderPage = orderRepository.findAllByUserIdAndStatus(userId, status, pageable);
-        }else if(orderCode != null){
+        } else if (orderCode != null) {
             orderPage = orderRepository.findAllByUserIdAndOrderCodeContaining(userId, orderCode, pageable);
-        }
-        else {
+        } else {
             orderPage = orderRepository.findAllByUserId(userId, pageable);
         }
         return orderPage.map(order -> {
@@ -237,7 +229,6 @@ public class OrderServiceImpl implements OrderService {
         });
     }
 
-
     @PreAuthorize("hasRole('SHOP')")
     public Page<OrderResponse> searchOrders(
             String orderCode,
@@ -245,9 +236,7 @@ public class OrderServiceImpl implements OrderService {
             String address,
             LocalDateTime fromDate,
             LocalDateTime toDate,
-            Pageable pageable
-    ) {
-
+            Pageable pageable) {
 
         Page<Order> orderPage = orderRepository.searchOrders(
                 orderCode,
@@ -255,8 +244,7 @@ public class OrderServiceImpl implements OrderService {
                 address,
                 fromDate,
                 toDate,
-                pageable
-        );
+                pageable);
         return orderPage.map(order -> {
             OrderResponse response = new OrderResponse();
             List<OrderDetailProjection> projections = orderRepository.getOrderDetailsNative(order.getId());
@@ -303,16 +291,14 @@ public class OrderServiceImpl implements OrderService {
             throw new AppException(ErrorCode.CANNOT_CANCEL_ORDER);
         }
         int orderId = order.getId();
-        ProductVariants variant ;
+        ProductVariants variant;
         List<OrderItems> items = orderItemRepository.findByOrderIdQuery(orderId);
         for (OrderItems item : items) {
             variant = item.getProductVariant();
             variant.setStockQuantity(
-                    variant.getStockQuantity() + item.getQuantity()
-            );
+                    variant.getStockQuantity() + item.getQuantity());
             variant.setSoldQuantity(
-                    variant.getSoldQuantity() - item.getQuantity()
-            );
+                    variant.getSoldQuantity() - item.getQuantity());
             productVariantRepository.save(variant);
         }
         order.setStatus(OrderStatus.CANCELLED.name());
@@ -320,105 +306,109 @@ public class OrderServiceImpl implements OrderService {
         return "Hủy đơn hàng thành công";
     }
 
-
     public List<OrderDetailResponse> getOrderDetails(Integer orderId) {
         // 1. Lấy dữ liệu thô từ SQL
         List<OrderDetailProjection> projections = orderRepository.getOrderDetailsNative(orderId);
 
-        // 2. Map sang DTO Response
-        return projections.stream()
-                .map(p -> OrderDetailResponse.builder()
-                        .orderId(p.getOrderPrimaryId())
-                        .orderCode(p.getOrderCode())
-                        .status(p.getStatus())
-                        .totalAmount(p.getTotalAmount())
-                        .shippingAmount(p.getShippingAmount())
-                        .shippingAddress(p.getShippingAddress())
-                        .orderDate(p.getOrderDate())
-                        .orderItemId(p.getOrderItemId())
-                        .quantity(p.getQuantity())
-                        .unitPrice(p.getUnitPrice())
-                        .totalPrice(p.getTotalPrice())
+        // 2. Group by orderItemId và gộp các ảnh lại
+        Map<Integer, List<OrderDetailProjection>> groupedByOrderItem = projections.stream()
+                .collect(Collectors.groupingBy(OrderDetailProjection::getOrderItemId));
 
-                        .productName(p.getProductName())
+        // 3. Map sang DTO Response, mỗi orderItem chỉ có 1 record, lấy ảnh đầu tiên
+        return groupedByOrderItem.values().stream()
+                .map(group -> {
+                    // Lấy projection đầu tiên để lấy thông tin chung
+                    OrderDetailProjection p = group.get(0);
 
-                        .variantId(p.getVariantId())
-                        .variantPrice(p.getPrice())
-                        .stockQuantity(p.getStockQuantity())
+                    // Lấy ảnh đầu tiên (hoặc có thể lấy tất cả ảnh nếu cần)
+                    String imageUrl = group.stream()
+                            .map(OrderDetailProjection::getImageUrl)
+                            .filter(url -> url != null && !url.isEmpty())
+                            .findFirst()
+                            .orElse(null);
 
-                        .imageUrl(p.getImageUrl())
-                        .build())
+                    return OrderDetailResponse.builder()
+                            .orderId(p.getOrderPrimaryId())
+                            .orderCode(p.getOrderCode())
+                            .status(p.getStatus())
+                            .totalAmount(p.getTotalAmount())
+                            .shippingAmount(p.getShippingAmount())
+                            .shippingAddress(p.getShippingAddress())
+                            .orderDate(p.getOrderDate())
+                            .orderItemId(p.getOrderItemId())
+                            .quantity(p.getQuantity())
+                            .unitPrice(p.getUnitPrice())
+                            .totalPrice(p.getTotalPrice())
+                            .productName(p.getProductName())
+                            .variantId(p.getVariantId())
+                            .variantPrice(p.getPrice())
+                            .stockQuantity(p.getStockQuantity())
+                            .imageUrl(imageUrl)
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
-
-
-
-
-    public UpdateOrderStatusResponse updateOrderStatus (UpdateOrderStatusRequest request) {
+    public UpdateOrderStatusResponse updateOrderStatus(UpdateOrderStatusRequest request) {
 
         List<String> success = new ArrayList<>();
         List<String> failed = new ArrayList<>();
 
-        for (UpdateOrderStatusRequest.OrderUpdate orderUpdate : request.getOrderUpdateList() ){
-            try{
-                Order order = orderRepository.findByIdAndOrderCode(orderUpdate.getId(),orderUpdate.getOrderCode()).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        for (UpdateOrderStatusRequest.OrderUpdate orderUpdate : request.getOrderUpdateList()) {
+            try {
+                Order order = orderRepository.findByIdAndOrderCode(orderUpdate.getId(), orderUpdate.getOrderCode())
+                        .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
                 OrderStatus currentStatus = OrderStatus.valueOf(order.getStatus());
                 OrderStatus newStatus = OrderStatus.valueOf(orderUpdate.getOrderStatus());
 
-                if (!OrderStatus.canTransition(currentStatus, newStatus)){
+                if (!OrderStatus.canTransition(currentStatus, newStatus)) {
                     throw new GlobalExceptionHandler.InvalidOrderStatusException(
                             "Invalid transition: "
-                                    + currentStatus + " → " + newStatus
-                    );
+                                    + currentStatus + " → " + newStatus);
                 }
                 order.setStatus(newStatus.name());
                 orderRepository.save(order);
                 success.add(orderUpdate.getOrderCode());
-            }catch (AppException e){
+            } catch (AppException e) {
                 failed.add(orderUpdate.getOrderCode());
-            }catch (Exception e){
+            } catch (Exception e) {
                 failed.add(orderUpdate.getOrderCode());
             }
         }
-        return new UpdateOrderStatusResponse(success,failed);
+        return new UpdateOrderStatusResponse(success, failed);
     }
-
-
 
     @Override
     public void checkStock(CheckStockRequest request) {
-        for(var item : request.getItems()) {
-            ProductVariants variants =
-                    productVariantRepository.findById(item.getProductVariantId()).orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
-            if(variants.getStockQuantity() < item.getQuantity()) {
+        for (var item : request.getItems()) {
+            ProductVariants variants = productVariantRepository.findById(item.getProductVariantId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+            if (variants.getStockQuantity() < item.getQuantity()) {
                 throw new AppException(ErrorCode.STOCK_NOT_ENOUGHT);
             }
         }
 
     }
 
-
-//    @Transactional
-//    public void markPaid(String orderCode) {
-//        Order order = orderRepository.findByOrderCode(orderCode)
-//                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-//
-//        if (order.getStatus().equals(OrderStatus.PROCESSING.name())) return;
-//
-//        order.setStatus(OrderStatus.PROCESSING.name());
-//        orderRepository.save(order);
-//    }
-//    @Transactional
-//    public void markFailed(String orderCode) {
-//        Order order = orderRepository.findByOrderCode(orderCode)
-//                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-//
-//        order.setStatus(OrderStatus.WAITING_PAYMENT.name());
-//        orderRepository.save(order);
-//    }
-
+    // @Transactional
+    // public void markPaid(String orderCode) {
+    // Order order = orderRepository.findByOrderCode(orderCode)
+    // .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+    //
+    // if (order.getStatus().equals(OrderStatus.PROCESSING.name())) return;
+    //
+    // order.setStatus(OrderStatus.PROCESSING.name());
+    // orderRepository.save(order);
+    // }
+    // @Transactional
+    // public void markFailed(String orderCode) {
+    // Order order = orderRepository.findByOrderCode(orderCode)
+    // .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+    //
+    // order.setStatus(OrderStatus.WAITING_PAYMENT.name());
+    // orderRepository.save(order);
+    // }
 
     public void updatePaymentMethod(Integer orderId, String method) {
         Integer userId = userIdFromToken();
@@ -436,20 +426,17 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
     }
 
-
-    private Integer userIdFromToken(){
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+    private Integer userIdFromToken() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        Jwt jwt =(Jwt)  authentication.getPrincipal();
-
+        Jwt jwt = (Jwt) authentication.getPrincipal();
 
         Number userIdClaim = jwt.getClaim("id");
-        Integer userIdFromToken =userIdClaim.intValue();
+        Integer userIdFromToken = userIdClaim.intValue();
         return userIdFromToken;
     }
 
@@ -464,21 +451,18 @@ public class OrderServiceImpl implements OrderService {
 
         if (order.getPaymentExpiredAt().isBefore(LocalDateTime.now())) {
             order.setStatus(OrderStatus.CANCELLED.name());
-            ProductVariants variant =  new ProductVariants();
+            ProductVariants variant = new ProductVariants();
             List<OrderItems> items = orderItemRepository.findByOrderIdQuery(order.getId());
             for (OrderItems item : items) {
                 variant = item.getProductVariant();
                 variant.setStockQuantity(
-                        variant.getStockQuantity() + item.getQuantity()
-                );
+                        variant.getStockQuantity() + item.getQuantity());
                 variant.setSoldQuantity(
-                        variant.getSoldQuantity() - item.getQuantity()
-                );
+                        variant.getSoldQuantity() - item.getQuantity());
                 productVariantRepository.save(variant);
             }
             orderRepository.save(order);
         }
     }
-
 
 }

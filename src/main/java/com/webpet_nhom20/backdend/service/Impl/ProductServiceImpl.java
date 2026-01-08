@@ -48,10 +48,10 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     @Cacheable(value = "product_list",
-            // THÊM: + ':' + #pageable.sort.toString() vào key để phân biệt các kiểu sắp xếp
-            key = "'p:' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort.toString() + ':' + #categoryId + ':' + (#search?:'') + ':' + (#minPrice?:'') + ':' + (#maxPrice?:'') + ':' + (#animal?:'') + ':' + (#brand?:'') + ':' + (#isFeature?:'') + ':' + (#isDelete?:'')"
-    )
-    public Page<ProductResponse> getAllProduct(Pageable pageable, Integer categoryId, String search, Double minPrice, Double maxPrice, String animal, String brand, String isFeature, String isDelete) {
+
+            key = "'p:' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort.toString() + ':' + #categoryId + ':' + (#search?:'') + ':' + (#minPrice?:'') + ':' + (#maxPrice?:'') + ':' + (#animal?:'') + ':' + (#brand?:'') + ':' + (#isFeature?:'') + ':' + (#isDelete?:'')")
+    public Page<ProductResponse> getAllProduct(Pageable pageable, Integer categoryId, String search, Double minPrice,
+            Double maxPrice, String animal, String brand, String isFeature, String isDelete) {
         Page<Products> productPage;
 
         boolean hasCategory = categoryId != null && categoryId > 0;
@@ -91,7 +91,8 @@ public class ProductServiceImpl implements ProductService {
             List<Sort.Order> dbOrders = pageable.getSort().stream()
                     .map(order -> {
                         String property = order.getProperty();
-                        if ("createdDate".equals(property)) return new Sort.Order(order.getDirection(), "created_date");
+                        if ("createdDate".equals(property))
+                            return new Sort.Order(order.getDirection(), "created_date");
                         if ("soldQuantity".equals(property))
                             return new Sort.Order(order.getDirection(), "sold_quantity");
                         return order;
@@ -110,23 +111,24 @@ public class ProductServiceImpl implements ProductService {
                     finalMin, finalMax, dbPageable);
         }
 
-// Map content
+        // Map content
         Page<ProductResponse> mapped = productPage.map(this::mapToProductResponse);
 
         return mapped;
     }
+
     @Override
     @Cacheable(value = "product_detail", key = "#productId")
     public ProductResponse getProductById(int productId) {
-        Products product = productRepository.findById(productId).orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+        Products product = productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
         return mapToProductResponse(product);
     }
 
     @Override
-    public List<BrandResponse> getBrand(){
+    public List<BrandResponse> getBrand() {
         return productRepository.getBrand();
     }
-
 
     /**
      * Ch ADMIN dùng không cache
@@ -146,14 +148,16 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<ProductResponse> getAllProductForAdmin(Pageable pageable, Integer categoryId, String search, Double minPrice, Double maxPrice, String animal, String brand, String isFeature, String isDelete) {
+    public Page<ProductResponse> getAllProductForAdmin(Pageable pageable, Integer categoryId, String search,
+            Double minPrice, Double maxPrice, String animal, String brand, String isFeature, String isDelete) {
         Page<Products> productPage;
 
         // 1. Chuẩn hóa tham số
         boolean hasCategory = categoryId != null && categoryId > 0;
         boolean hasSearch = search != null && !search.trim().isEmpty();
 
-        // animal và brand có thể null, query repository đã xử lý logic này (IS NULL OR ...)
+        // animal và brand có thể null, query repository đã xử lý logic này (IS NULL OR
+        // ...)
 
         // Kiểm tra có lọc giá hay không (chỉ cần nhập min HOẶC max là tính có lọc)
         boolean hasPrice = minPrice != null || maxPrice != null;
@@ -181,7 +185,7 @@ public class ProductServiceImpl implements ProductService {
                         animal, // Thêm tham số animal
                         brand,
                         isDelete,
-                        isFeature,// Thêm tham số brand
+                        isFeature, // Thêm tham số brand
                         hasSearch ? search.trim() : null,
                         finalMin, finalMax, unsortedPageable);
             } else {
@@ -190,7 +194,7 @@ public class ProductServiceImpl implements ProductService {
                         animal, // Thêm tham số animal
                         brand,
                         isDelete,
-                        isFeature,// Thêm tham số brand
+                        isFeature, // Thêm tham số brand
                         hasSearch ? search.trim() : null,
                         finalMin, finalMax, unsortedPageable);
             }
@@ -202,9 +206,11 @@ public class ProductServiceImpl implements ProductService {
                     .map(order -> {
                         String property = order.getProperty();
                         // Map createdDate -> created_time (hoặc created_date tùy DB của bạn)
-                        if ("createdDate".equals(property)) return new Sort.Order(order.getDirection(), "created_date");
+                        if ("createdDate".equals(property))
+                            return new Sort.Order(order.getDirection(), "created_date");
                         // Map soldQuantity -> sold_quantity
-                        if ("soldQuantity".equals(property)) return new Sort.Order(order.getDirection(), "sold_quantity");
+                        if ("soldQuantity".equals(property))
+                            return new Sort.Order(order.getDirection(), "sold_quantity");
                         // Các trường khác giữ nguyên
                         return order;
                     })
@@ -218,7 +224,7 @@ public class ProductServiceImpl implements ProductService {
                     animal, // Thêm tham số animal
                     brand,
                     isDelete,
-                    isFeature,// Thêm tham số brand
+                    isFeature, // Thêm tham số brand
                     hasSearch ? search.trim() : null,
                     finalMin, finalMax, dbPageable);
         }
@@ -231,18 +237,21 @@ public class ProductServiceImpl implements ProductService {
         return new PageImpl<>(productResponses, pageable, productPage.getTotalElements());
     }
 
-
     @Override
     public ProductResponse getProductByIdForAdmin(int productId) {
-        Products product = productRepository.findById(productId).orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+        Products product = productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
         return mapToProductResponse(product);
     }
+
     @Override
     @Transactional // Đảm bảo tất cả các thao tác DB trong hàm này là một khối (atomic)
     @PreAuthorize("hasRole('SHOP')")
+    @CacheEvict(value = { "product_list", "product_detail" }, allEntries = true)
     public FullProductCreateResponse createFullProduct(FullProductCreateRequest request) {
         // 1. Tạo và lưu đối tượng Product chính
-        Categories categories = categoryRepository.findById(request.getCategoryId()).orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+        Categories categories = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
 
         boolean existsProduct = productRepository.existsByName(request.getName());
         if (existsProduct) {
@@ -319,20 +328,22 @@ public class ProductServiceImpl implements ProductService {
                 .build();
     }
 
-
     @PreAuthorize("hasRole('SHOP')")
     @Override
-    @CacheEvict(value = {"product_list" , "product_detail" }, allEntries = true)
+    @CacheEvict(value = { "product_list", "product_detail" }, allEntries = true)
     public ProductResponse updateProduct(int productId, UpdateProductRequest request) {
-        Products products = productRepository.findById(productId).orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+        Products products = productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
         productMapper.updateProduct(products, request);
         return productMapper.toProductResponse(productRepository.save(products));
     }
+
     @PreAuthorize("hasRole('SHOP')")
     @Override
-    @CacheEvict(value = {"product_list" , "product_detail" }, allEntries = true)
+    @CacheEvict(value = { "product_list", "product_detail" }, allEntries = true)
     public String deleteProduct(int productId) {
-        Products products = productRepository.findById(productId).orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+        Products products = productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
         if (products.getIsDeleted().equals("1")) {
             return "Sản phẩm đã bị xóa trước đó";
         }
@@ -341,11 +352,9 @@ public class ProductServiceImpl implements ProductService {
         return "Xóa thành công";
     }
 
-
     public boolean checkExistProductByName(String productName) {
         return productRepository.existsByName(productName);
     }
-
 
     // Hàm map Products entity sang ProductResponse DTO
     private ProductResponse mapToProductResponse(Products product) {
@@ -368,8 +377,7 @@ public class ProductServiceImpl implements ProductService {
                 .build();
 
         // ================= PRODUCT IMAGES =================
-        List<ProductImages> images =
-                productImageRepository.findByProductIdAndIsDeleted(product.getId(), "0");
+        List<ProductImages> images = productImageRepository.findByProductIdAndIsDeleted(product.getId(), "0");
 
         List<ProductImageResponse> imageResponses = images.stream()
                 .map(image -> ProductImageResponse.builder()
@@ -386,16 +394,13 @@ public class ProductServiceImpl implements ProductService {
 
         response.setProductImage(imageResponses);
 
-
         // ================= VARIANTS =================
-        List<ProductVariants> variants =
-                productVariantRepository.findByProductId(product.getId());
+        List<ProductVariants> variants = productVariantRepository.findByProductId(product.getId());
 
         List<ProductVariantResponse> variantResponses = variants.stream()
                 .map(variant -> {
 
-                    List<ProductImages> variantImages =
-                            productImageRepository.findImagesByVariantId(variant.getId());
+                    List<ProductImages> variantImages = productImageRepository.findImagesByVariantId(variant.getId());
 
                     List<String> imageUrls = variantImages.stream()
                             .map(ProductImages::getImageUrl)
@@ -421,11 +426,10 @@ public class ProductServiceImpl implements ProductService {
 
         return response;
     }
+
     @Override
     public List<String> getAnimalList() {
         return productRepository.findDistinctAnimals();
     }
-
-
 
 }

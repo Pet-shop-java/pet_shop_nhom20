@@ -20,6 +20,8 @@ import com.webpet_nhom20.backdend.repository.PetRepository;
 import com.webpet_nhom20.backdend.service.PetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.webpet_nhom20.backdend.exception.ErrorCode;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,7 @@ public class PetServiceImpl implements PetService {
 
     @PreAuthorize("hasRole('SHOP')")
     @Transactional
+    @CacheEvict(value = { "pet_list", "pet_detail" }, allEntries = true)
     @Override
     public PetResponse createPet(PetCreationRequest request) {
 
@@ -84,6 +87,7 @@ public class PetServiceImpl implements PetService {
     @Override
     @Transactional
     @PreAuthorize("hasRole('SHOP')")
+    @CacheEvict(value = { "pet_list", "pet_detail" }, allEntries = true)
     public FullPetCreateResponse createFullPet(FullPetCreationRequest request) {
 
         if (petRepository.existsByName(request.getName())) {
@@ -170,8 +174,9 @@ public class PetServiceImpl implements PetService {
     }
 
     @Override
+    @Cacheable(value = "pet_list", key = "'p:' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort.toString() + ':' + (#isDeleted?:'') + ':' + (#animal?:'') + ':' + (#minWeight?:'') + ':' + (#maxWeight?:'') + ':' + (#ageGroup?:'') + ':' + (#breed?:'') + ':' + (#name?:'') + ':' + (#status?:'')")
     public Page<PetResponse> getAllPets(String isDeleted, String animal, Float minWeight, Float maxWeight,
-            String ageGroup,String breed, String name , Pageable pageable, String status) {
+            String ageGroup, String breed, String name, Pageable pageable, String status) {
         // 1️⃣ Chuẩn hóa điều kiện filter
         boolean hasAnimal = animal != null && !animal.isBlank();
         // Không cần check hasWeight nữa vì ta truyền thẳng null vào query
@@ -229,6 +234,7 @@ public class PetServiceImpl implements PetService {
     }
 
     @Override
+    @CacheEvict(value = { "pet_list", "pet_detail" }, allEntries = true)
     public void deletePet(int petId) {
         Pets pet = petRepository.findById(petId)
                 .orElseThrow(() -> new AppException(ErrorCode.PET_NOT_FOUND));
@@ -239,6 +245,7 @@ public class PetServiceImpl implements PetService {
     }
 
     @Override
+    @CacheEvict(value = { "pet_list", "pet_detail" }, allEntries = true)
     public void restorePet(int petId) {
         Pets pet = petRepository.findById(petId)
                 .orElseThrow(() -> new AppException(ErrorCode.PET_NOT_FOUND));
@@ -251,6 +258,7 @@ public class PetServiceImpl implements PetService {
     }
 
     @Override
+    @Cacheable(value = "pet_detail", key = "#petId")
     public PetResponse getPetById(int petId) {
         Pets pet = petRepository.findById(petId)
                 .orElseThrow(() -> new AppException(ErrorCode.PET_NOT_FOUND));
@@ -260,6 +268,7 @@ public class PetServiceImpl implements PetService {
     @Override
     @Transactional
     @PreAuthorize("hasRole('SHOP')")
+    @CacheEvict(value = { "pet_list", "pet_detail" }, allEntries = true)
     public PetResponse updatePet(int petId, PetUpdateRequest request) {
 
         Pets pet = petRepository.findById(petId)
@@ -335,8 +344,9 @@ public class PetServiceImpl implements PetService {
 
         return mapToPesResponse(pet);
     }
+
     @Override
-    public List<String> getBreed(){
+    public List<String> getBreed() {
         return petRepository.getBreed();
     }
 

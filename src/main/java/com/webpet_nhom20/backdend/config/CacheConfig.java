@@ -1,6 +1,5 @@
 package com.webpet_nhom20.backdend.config;
 
-
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -23,8 +22,10 @@ public class CacheConfig {
         cacheManager.setCaches(List.of(
                 buildCache("product_list", 5),
                 buildCache("product_detail", 10),
-                buildCache("categories", 60)
-        ));
+                buildCache("pet_list", 5),
+                buildCache("pet_detail", 10),
+                buildCache("category_list", 30),
+                buildCache("category_detail", 30)));
 
         return cacheManager;
     }
@@ -35,8 +36,6 @@ public class CacheConfig {
                 Caffeine.newBuilder()
                         .expireAfterWrite(minutes, TimeUnit.MINUTES)
                         .maximumSize(1000)
-                        .build()
-        );
+                        .build());
     }
 }
-

@@ -48,7 +48,8 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     @Cacheable(value = "product_list",
-            key = "'p:' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #categoryId + ':' + (#search?:'') + ':' + (#minPrice?:'') + ':' + (#maxPrice?:'') + ':' + (#animal?:'') + ':' + (#brand?:'') + ':' + (#isFeature?:'') + ':' + (#isDelete?:'')"
+            // THÊM: + ':' + #pageable.sort.toString() vào key để phân biệt các kiểu sắp xếp
+            key = "'p:' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort.toString() + ':' + #categoryId + ':' + (#search?:'') + ':' + (#minPrice?:'') + ':' + (#maxPrice?:'') + ':' + (#animal?:'') + ':' + (#brand?:'') + ':' + (#isFeature?:'') + ':' + (#isDelete?:'')"
     )
     public Page<ProductResponse> getAllProduct(Pageable pageable, Integer categoryId, String search, Double minPrice, Double maxPrice, String animal, String brand, String isFeature, String isDelete) {
         Page<Products> productPage;

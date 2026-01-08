@@ -1,5 +1,6 @@
 package com.webpet_nhom20.backdend.entity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.*;
 import java.util.Date;
 import java.util.Set;
@@ -27,7 +28,8 @@ public class Pets {
     private String breed;
 
     @Column(name = "age", nullable = false)
-    private Integer age;
+    @Min(value = 0, message = "Tuổi phải lớn hơn 0")
+    private Float age;
 
     @Column(name = "age_group", length = 100)
     private String ageGroup;

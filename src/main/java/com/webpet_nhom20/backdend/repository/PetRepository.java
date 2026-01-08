@@ -26,6 +26,8 @@ public interface PetRepository extends JpaRepository<Pets, Integer> {
     AND (:minWeight IS NULL OR p.weight >= :minWeight)
     AND (:maxWeight IS NULL OR p.weight <= :maxWeight)
     AND (:ageGroup IS NULL OR p.ageGroup = :ageGroup)
+    AND (:breed IS NULL OR p.breed = :breed)
+    AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%')))
     AND (:status IS NULL OR p.status = :status)
     AND (:isDelete IS NULL OR p.isDeleted = :isDelete)
     """)
@@ -34,6 +36,8 @@ public interface PetRepository extends JpaRepository<Pets, Integer> {
             @Param("minWeight") Float minWeight,
             @Param("maxWeight") Float maxWeight,
             @Param("ageGroup") String ageGroup,
+            @Param("breed") String breed,
+            @Param("name") String name,
             @Param("status") String status,
             @Param("isDelete") String isDelete,
             Pageable pageable
@@ -59,6 +63,11 @@ public interface PetRepository extends JpaRepository<Pets, Integer> {
             @Param("petId") int petId,
             @Param("status") String status
     );
+    @Query(
+            value = "SELECT DISTINCT breed FROM pets WHERE is_deleted = '0'",
+            nativeQuery = true
+    )
+    List<String> getBreed();
 
 
 }

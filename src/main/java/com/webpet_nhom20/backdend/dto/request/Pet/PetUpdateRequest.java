@@ -28,7 +28,7 @@ public class PetUpdateRequest {
     @NotNull(message = "Tuổi không được để trống")
     @Min(value = 0, message = "Tuổi phải >= 0")
     @Max(value = 50, message = "Tuổi không hợp lệ")
-    private Integer age;
+    private Float age;
 
     @Size(max = 100, message = "Nhóm tuổi tối đa 100 ký tự")
     private String ageGroup;

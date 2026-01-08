@@ -13,11 +13,12 @@ import java.util.List;
 public interface PetService {
     PetResponse createPet(PetCreationRequest request);
     FullPetCreateResponse createFullPet(FullPetCreationRequest request);
-    Page<PetResponse> getAllPets(String isDeleted, String animal, Float minWeight, Float maxWeight, String ageGroup, Pageable pageable, String status);
+    Page<PetResponse> getAllPets(String isDeleted, String animal, Float minWeight, Float maxWeight, String ageGroup,String breed ,String name, Pageable pageable, String status);
     List<String> getAnimalForCustomer();
     List<String> getAnimalForAdmin();
     void deletePet(int petId);
     PetResponse getPetById(int petId);
     PetResponse updatePet(int petId, PetUpdateRequest request);
     void restorePet(int petId);
+    List<String> getBreed();
 }

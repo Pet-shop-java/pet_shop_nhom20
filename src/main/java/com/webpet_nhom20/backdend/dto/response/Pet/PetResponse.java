@@ -23,7 +23,7 @@ public class PetResponse {
     private String name;
     private String animal; // Dog, Cat
     private String breed;
-    private Integer age;
+    private Float age;
     private String ageGroup;
     private Float weight;
     private String gender;

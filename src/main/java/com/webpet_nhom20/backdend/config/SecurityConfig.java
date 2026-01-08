@@ -66,7 +66,8 @@ public class SecurityConfig {
             "/api/v1/payment/vnpay/return",
             "/api/v1/pets",
             "/api/v1/pets/animalsCustomer",
-            "/api/v1/pets/{petId}"
+            "/api/v1/pets/{petId}",
+            "/api/v1/pets/breeds",
 
     };
 

@@ -171,14 +171,15 @@ public class PetServiceImpl implements PetService {
 
     @Override
     public Page<PetResponse> getAllPets(String isDeleted, String animal, Float minWeight, Float maxWeight,
-            String ageGroup, Pageable pageable, String status) {
+            String ageGroup,String breed, String name , Pageable pageable, String status) {
         // 1️⃣ Chuẩn hóa điều kiện filter
         boolean hasAnimal = animal != null && !animal.isBlank();
         // Không cần check hasWeight nữa vì ta truyền thẳng null vào query
         boolean hasAgeGroup = ageGroup != null && !ageGroup.isBlank();
         boolean hasIsDeleted = isDeleted != null && !isDeleted.isBlank();
         boolean hasStatus = status != null && !status.isBlank();
-
+        boolean hasBreed = breed != null && !breed.isBlank();
+        boolean hasName = name != null && !name.isBlank();
         // 2️⃣ Mapping SORT (camelCase → snake_case)
         List<Sort.Order> dbOrders = pageable.getSort().stream()
                 .map(order -> {
@@ -202,6 +203,8 @@ public class PetServiceImpl implements PetService {
                 minWeight, // Truyền trực tiếp (null nếu không có)
                 maxWeight, // Truyền trực tiếp (null nếu không có)
                 hasAgeGroup ? ageGroup : null,
+                hasBreed ? breed : null,
+                hasName ? name : null,
                 hasStatus ? status : null,
                 hasIsDeleted ? isDeleted : null,
                 dbPageable);
@@ -331,6 +334,10 @@ public class PetServiceImpl implements PetService {
         }
 
         return mapToPesResponse(pet);
+    }
+    @Override
+    public List<String> getBreed(){
+        return petRepository.getBreed();
     }
 
 }

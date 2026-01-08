@@ -49,13 +49,15 @@ public class PetController {
             @RequestParam(required = false) Float minWeight, // Thay Float weight bằng minWeight
             @RequestParam(required = false) Float maxWeight, // Thêm maxWeight
             @RequestParam(required = false) String ageGroup,
+            @RequestParam(required = false) String breed,
+            @RequestParam(required = false) String name,
             @RequestParam(required = false) String isDeleted,
             @RequestParam(required = false) String status) {
 
         return ApiResponse.<Page<PetResponse>>builder()
                 .success(true)
                 .message("Lấy danh sách sản phẩm thành công")
-                .result(petService.getAllPets(isDeleted, animal, minWeight,maxWeight, ageGroup, pageable, status))
+                .result(petService.getAllPets(isDeleted, animal, minWeight,maxWeight, ageGroup,breed,name, pageable, status))
                 .build();
     }
     @GetMapping("/animalsCustomer")
@@ -104,6 +106,14 @@ public class PetController {
         return ApiResponse.<Void>builder()
                 .success(true)
                 .message("Khôi phục thú cưng thành công")
+                .build();
+    }
+    @GetMapping("/breeds")
+    public ApiResponse<List<String>> getBreed() {
+        return ApiResponse.<List<String>>builder()
+                .success(true)
+                .message("Lấy danh sách giống loài thành công")
+                .result(petService.getBreed())
                 .build();
     }
 }

@@ -65,6 +65,8 @@ public class OrderServiceImpl implements OrderService {
     private CartItemRepository cartItemRepository;
     @Autowired
     private CartRepository cartRepository;
+    @Autowired
+    private AddressRepository addressRepository;
 
     @Override
     @PreAuthorize("hasRole('CUSTOMER')")
@@ -120,15 +122,38 @@ public class OrderServiceImpl implements OrderService {
         // ================== 4. CREATE ORDER ==================
         Order order = new Order();
 
+        Integer userId = userIdFromToken();
         User user = new User();
-        user.setId(userIdFromToken());
+        user.setId(userId);
 
         order.setUser(user);
         order.setOrderCode("ORD-" + System.currentTimeMillis());
         order.setTotalAmount(totalAmount);
         order.setShippingAmount(shippingAmount);
         order.setDiscountPercent(discountPercent);
-        order.setShippingAddress(request.getShippingAddress());
+
+        // Set address relationship if addressId is provided
+        if (request.getAddressId() != null) {
+            Addresses address = addressRepository.findById(request.getAddressId())
+                    .orElseThrow(() -> new AppException(ErrorCode.ADDRESS_NOT_FOUND));
+
+            // Verify address belongs to user
+            if (!userId.equals(address.getUser().getId())) {
+                throw new AppException(ErrorCode.UNAUTHORIZED_ADDRESS);
+            }
+
+            order.setAddress(address);
+
+            // Build shipping address string for backward compatibility and database
+            // constraint
+            String formattedAddress = String.format("%s, %s, %s, %s",
+                    address.getDetailAddress(),
+                    address.getWard(),
+                    address.getState(),
+                    address.getCity());
+            order.setShippingAddress(formattedAddress);
+        }
+
         order.setNote(request.getNote());
         order.setIsDeleted("0");
 
@@ -140,7 +165,6 @@ public class OrderServiceImpl implements OrderService {
             order.setPaymentMethod(PaymentMethod.VNPAY.name());
             order.setPaymentExpiredAt(LocalDateTime.now().plusDays(1));
         }
-        order.setShippingAddress(request.getShippingAddress());
         order.setIsDeleted("0");
         order.setNote(request.getNote());
 
@@ -189,6 +213,19 @@ public class OrderServiceImpl implements OrderService {
         response.setDiscountPercent(savedOrder.getDiscountPercent());
         response.setStatus(savedOrder.getStatus());
         response.setShippingAddress(savedOrder.getShippingAddress());
+
+        // Populate address details if address relationship exists
+        if (savedOrder.getAddress() != null) {
+            Addresses address = savedOrder.getAddress();
+            response.setAddressId(address.getId());
+            response.setContactName(address.getContactName());
+            response.setPhone(address.getPhone());
+            response.setDetailAddress(address.getDetailAddress());
+            response.setWard(address.getWard());
+            response.setState(address.getState());
+            response.setCity(address.getCity());
+        }
+
         response.setNote(savedOrder.getNote());
         response.setIsDeleted(savedOrder.getIsDeleted());
         response.setCreatedDate(savedOrder.getCreatedDate());
@@ -233,6 +270,19 @@ public class OrderServiceImpl implements OrderService {
             response.setTotalAmount(order.getTotalAmount());
             response.setShippingAmount(order.getShippingAmount());
             response.setShippingAddress(order.getShippingAddress());
+
+            // Populate address details if exists
+            if (order.getAddress() != null) {
+                Addresses address = order.getAddress();
+                response.setAddressId(address.getId());
+                response.setContactName(address.getContactName());
+                response.setPhone(address.getPhone());
+                response.setDetailAddress(address.getDetailAddress());
+                response.setWard(address.getWard());
+                response.setState(address.getState());
+                response.setCity(address.getCity());
+            }
+
             response.setNote(order.getNote());
             response.setStatus(order.getStatus());
             response.setCreatedDate(order.getCreatedDate());
@@ -321,11 +371,15 @@ public class OrderServiceImpl implements OrderService {
         // 1. Lấy dữ liệu thô từ SQL
         List<OrderDetailProjection> projections = orderRepository.getOrderDetailsNative(orderId);
 
-        // 2. Group by orderItemId và gộp các ảnh lại
+        // 2. Fetch Order entity để lấy address details
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+
+        // 3. Group by orderItemId và gộp các ảnh lại
         Map<Integer, List<OrderDetailProjection>> groupedByOrderItem = projections.stream()
                 .collect(Collectors.groupingBy(OrderDetailProjection::getOrderItemId));
 
-        // 3. Map sang DTO Response, mỗi orderItem chỉ có 1 record, lấy ảnh đầu tiên
+        // 4. Map sang DTO Response, mỗi orderItem chỉ có 1 record, lấy ảnh đầu tiên
         return groupedByOrderItem.values().stream()
                 .map(group -> {
                     // Lấy projection đầu tiên để lấy thông tin chung
@@ -338,7 +392,7 @@ public class OrderServiceImpl implements OrderService {
                             .findFirst()
                             .orElse(null);
 
-                    return OrderDetailResponse.builder()
+                    OrderDetailResponse.OrderDetailResponseBuilder builder = OrderDetailResponse.builder()
                             .orderId(p.getOrderPrimaryId())
                             .orderCode(p.getOrderCode())
                             .status(p.getStatus())
@@ -354,8 +408,21 @@ public class OrderServiceImpl implements OrderService {
                             .variantId(p.getVariantId())
                             .variantPrice(p.getPrice())
                             .stockQuantity(p.getStockQuantity())
-                            .imageUrl(imageUrl)
-                            .build();
+                            .imageUrl(imageUrl);
+
+                    // Populate address details if address relationship exists
+                    if (order.getAddress() != null) {
+                        Addresses address = order.getAddress();
+                        builder.addressId(address.getId())
+                                .contactName(address.getContactName())
+                                .phone(address.getPhone())
+                                .detailAddress(address.getDetailAddress())
+                                .ward(address.getWard())
+                                .state(address.getState())
+                                .city(address.getCity());
+                    }
+
+                    return builder.build();
                 })
                 .collect(Collectors.toList());
     }

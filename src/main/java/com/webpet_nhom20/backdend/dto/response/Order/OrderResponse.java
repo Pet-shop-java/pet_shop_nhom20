@@ -32,6 +32,15 @@ public class OrderResponse {
 
     String shippingAddress;
 
+    // Address details from address relationship
+    Integer addressId;
+    String contactName;
+    String phone;
+    String detailAddress;
+    String ward;
+    String state;
+    String city;
+
     String note;
 
     String status;

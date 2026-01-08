@@ -4,7 +4,6 @@ import lombok.Getter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 
-
 @Getter
 public enum ErrorCode {
     // ===== LỖI HỆ THỐNG (9xxx) =====
@@ -23,8 +22,8 @@ public enum ErrorCode {
     ACCESS_DENIED(1102, "Truy cập bị từ chối", HttpStatus.FORBIDDEN),
     IDENTIFIER_NOT_BLANK(1103, "Tên đăng nhập hoặc email không được để trống", HttpStatus.BAD_REQUEST),
     TOKEN_NOT_BLANK(1104, "Token không được để trống", HttpStatus.BAD_REQUEST),
-    IS_EMPTY(1105,"Danh sách rỗng",HttpStatus.BAD_REQUEST),
-    EMAIL_NOT_FOUND(1106,"Email không tồn tại",HttpStatus.NOT_FOUND),
+    IS_EMPTY(1105, "Danh sách rỗng", HttpStatus.BAD_REQUEST),
+    EMAIL_NOT_FOUND(1106, "Email không tồn tại", HttpStatus.NOT_FOUND),
     // ===== LỖI NGƯỜI DÙNG (1200-1299) =====
     // Validation lỗi rỗng
     USERNAME_NOT_BLANK(1200, "Tên đăng nhập không được để trống", HttpStatus.BAD_REQUEST),
@@ -36,11 +35,14 @@ public enum ErrorCode {
     // Validation định dạng
     USERNAME_INVALID(1210, "Tên đăng nhập phải có ít nhất 3 ký tự", HttpStatus.BAD_REQUEST),
     PASSWORD_INVALID_LENGTH(1211, "Mật khẩu phải có ít nhất 6 ký tự", HttpStatus.BAD_REQUEST),
-    PASSWORD_INVALID_FORMAT(1212, "Mật khẩu phải chứa ít nhất: 1 chữ thường, 1 chữ hoa, 1 số và 1 ký tự đặc biệt (@$!%*?&#)", HttpStatus.BAD_REQUEST),
+    PASSWORD_INVALID_FORMAT(1212,
+            "Mật khẩu phải chứa ít nhất: 1 chữ thường, 1 chữ hoa, 1 số và 1 ký tự đặc biệt (@$!%*?&#)",
+            HttpStatus.BAD_REQUEST),
     EMAIL_INVALID(1213, "Định dạng email không hợp lệ", HttpStatus.BAD_REQUEST),
     FULLNAME_INVALID(1214, "Họ tên phải có ít nhất 3 ký tự", HttpStatus.BAD_REQUEST),
     PHONE_INVALID(1215, "Số điện thoại phải có ít nhất 10 ký tự", HttpStatus.BAD_REQUEST),
-    PHONE_FORMAT_INVALID(1216, "Định dạng số điện thoại không hợp lệ (VD: 0xxxxxxxxx hoặc +84xxxxxxxxx)", HttpStatus.BAD_REQUEST),
+    PHONE_FORMAT_INVALID(1216, "Định dạng số điện thoại không hợp lệ (VD: 0xxxxxxxxx hoặc +84xxxxxxxxx)",
+            HttpStatus.BAD_REQUEST),
 
     // Lỗi trùng lặp
     USER_EXISTED(1220, "Người dùng đã tồn tại", HttpStatus.BAD_REQUEST),
@@ -85,16 +87,18 @@ public enum ErrorCode {
     VARIANT_NAME_SIZE_INVALID(1609, "Tên biến thể phải từ 1-255 ký tự", HttpStatus.BAD_REQUEST),
     WEIGHT_MUST_BE_POSITIVE(1610, "Khối lượng phải là số dương", HttpStatus.BAD_REQUEST),
     VARIANT_PRICE_MUST_BE_POSITIVE_OR_ZERO(1611, "Giá phải là số dương hoặc bằng 0", HttpStatus.BAD_REQUEST),
-    STOCK_QUANTITY_MUST_BE_POSITIVE_OR_ZERO(1612, "Số lượng tồn kho phải là số dương hoặc bằng 0", HttpStatus.BAD_REQUEST),
+    STOCK_QUANTITY_MUST_BE_POSITIVE_OR_ZERO(1612, "Số lượng tồn kho phải là số dương hoặc bằng 0",
+            HttpStatus.BAD_REQUEST),
     IS_DELETED_INVALID(1613, "Giá trị isDeleted phải là 0 hoặc 1", HttpStatus.BAD_REQUEST),
-    STOCK_NOT_ENOUGHT(1614,"Số lượng hàng trong kho không đủ",HttpStatus.OK),
+    STOCK_NOT_ENOUGHT(1614, "Số lượng hàng trong kho không đủ", HttpStatus.OK),
 
     // ===== LỖI HÌNH ẢNH (1700-1799) =====
     IMAGE_NOT_FOUND(1700, "Hình ảnh không tồn tại", HttpStatus.NOT_FOUND),
     IMAGE_IS_DELETE(1701, "Hình ảnh đã bị xóa", HttpStatus.BAD_REQUEST),
     IMAGE_IS_PRIMARY(1702, "Hình ảnh đang là ảnh chính", HttpStatus.BAD_REQUEST),
     IMAGE_IS_NOT_PRIMARY_AND_DELETE(1703, "Hình ảnh không phải ảnh chính và đã bị xóa", HttpStatus.BAD_REQUEST),
-    PRIMARY_IMAGE_ALREADY_EXISTS(1704, "Sản phẩm đã có ảnh chính, không thể thêm ảnh chính khác", HttpStatus.BAD_REQUEST),
+    PRIMARY_IMAGE_ALREADY_EXISTS(1704, "Sản phẩm đã có ảnh chính, không thể thêm ảnh chính khác",
+            HttpStatus.BAD_REQUEST),
     MAX_FILE_SIZE(1705, "Kích thước file tối đa là 2MB", HttpStatus.BAD_REQUEST),
     FORMAT_FILE_VALID(1706, "Chỉ chấp nhận định dạng jpg|jpeg|png|gif|bmp|webp", HttpStatus.BAD_REQUEST),
     FAIL_TO_UPLOAD_FILE(1707, "Tải lên file thất bại", HttpStatus.BAD_REQUEST),
@@ -135,52 +139,55 @@ public enum ErrorCode {
     ALREADY_COMPLETED(1910, "Lịch hẹn đã hoàn thành", HttpStatus.BAD_REQUEST),
     UNAUTHENTICATED_CANCEL(1911, "Không có quyền hủy lịch hẹn", HttpStatus.FORBIDDEN),
 
-    //Address (2000-2099)
-    ADDRESS_NOT_FOUND(2000,"Địa chỉ không tồn tại",HttpStatus.BAD_REQUEST),
-    ADDRESS_IS_NOT_NULL(2001,"Địa chỉ không được để trống",HttpStatus.BAD_REQUEST),
-    CONTACT_NAME_IS_NOT_NULL(2002,"Tên người liên hệ không được để trống",HttpStatus.BAD_REQUEST),
-    DETAIL_ADDRESS_IS_NOT_NULL(2003,"Địa chỉ chi tiết không được để trống",HttpStatus.BAD_REQUEST),
-    CITY_IS_NOT_NULL(2004,"Tỉnh/Thành phố không được để trống",HttpStatus.BAD_REQUEST),
-    STATE_IS_NOT_NULL(2005,"Quận/Huyện không được để trống",HttpStatus.BAD_REQUEST),
-    WARD_IS_NOT_NULL(2006,"Phường/Xã không được để trống",HttpStatus.BAD_REQUEST),
-    CANNOT_DELETE_DEFAULT_ADDRESS(2007,"Không thể xóa địa chỉ mặc định",HttpStatus.BAD_REQUEST),
-    //User (2100-2199)
-    UNCORRECT_PASSWORD(1223,"Mật khẩu cũ không đúng", HttpStatus.BAD_REQUEST),
+    // Address (2000-2099)
+    ADDRESS_NOT_FOUND(2000, "Địa chỉ không tồn tại", HttpStatus.BAD_REQUEST),
+    ADDRESS_IS_NOT_NULL(2001, "Địa chỉ không được để trống", HttpStatus.BAD_REQUEST),
+    CONTACT_NAME_IS_NOT_NULL(2002, "Tên người liên hệ không được để trống", HttpStatus.BAD_REQUEST),
+    DETAIL_ADDRESS_IS_NOT_NULL(2003, "Địa chỉ chi tiết không được để trống", HttpStatus.BAD_REQUEST),
+    CITY_IS_NOT_NULL(2004, "Tỉnh/Thành phố không được để trống", HttpStatus.BAD_REQUEST),
+    STATE_IS_NOT_NULL(2005, "Quận/Huyện không được để trống", HttpStatus.BAD_REQUEST),
+    WARD_IS_NOT_NULL(2006, "Phường/Xã không được để trống", HttpStatus.BAD_REQUEST),
+    CANNOT_DELETE_DEFAULT_ADDRESS(2007, "Không thể xóa địa chỉ mặc định", HttpStatus.BAD_REQUEST),
+    UNAUTHORIZED_ADDRESS(2008, "Địa chỉ không thuộc về người dùng này", HttpStatus.FORBIDDEN),
+    // User (2100-2199)
+    UNCORRECT_PASSWORD(1223, "Mật khẩu cũ không đúng", HttpStatus.BAD_REQUEST),
 
-    //Order (2200-2299)
-    ORDER_NOT_FOUND(2200,"Đơn hàng không tồn tại",HttpStatus.BAD_REQUEST),
-    ORDER_STATUS_INVALID(2201,"Trạng thái đơn hàng không hợp lệ",HttpStatus.BAD_REQUEST),
-    CANNOT_CANCEL_COMPLETED_ORDER(2202,"Không thể hủy đơn hàng đã hoàn thành",HttpStatus.BAD_REQUEST),
-    CANNOT_CANCEL_CANCELED_ORDER(2203,"Không thể hủy đơn hàng đã bị hủy",HttpStatus.BAD_REQUEST),
-    PRODUCT_VARIANT_ID_IS_NOT_NULL(2204,"ID biến thể sản phẩm không được để trống",HttpStatus.BAD_REQUEST),
-    CANNOT_CANCEL_ORDER(2205,"Không thể hủy đơn hàng này",HttpStatus.BAD_REQUEST),
+    // Order (2200-2299)
+    ORDER_NOT_FOUND(2200, "Đơn hàng không tồn tại", HttpStatus.BAD_REQUEST),
+    ORDER_STATUS_INVALID(2201, "Trạng thái đơn hàng không hợp lệ", HttpStatus.BAD_REQUEST),
+    CANNOT_CANCEL_COMPLETED_ORDER(2202, "Không thể hủy đơn hàng đã hoàn thành", HttpStatus.BAD_REQUEST),
+    CANNOT_CANCEL_CANCELED_ORDER(2203, "Không thể hủy đơn hàng đã bị hủy", HttpStatus.BAD_REQUEST),
+    PRODUCT_VARIANT_ID_IS_NOT_NULL(2204, "ID biến thể sản phẩm không được để trống", HttpStatus.BAD_REQUEST),
+    CANNOT_CANCEL_ORDER(2205, "Không thể hủy đơn hàng này", HttpStatus.BAD_REQUEST),
 
-    //Booking Time (2300-2399)
-    START_TIME_IS_NOT_NULL(2300,"Thời gian bắt đầu không được để để trống",HttpStatus.BAD_REQUEST),
-    MAX_CAPACITY_IS_NOT_NULL(2301,"Sức chứa tối đa không được để trống",HttpStatus.BAD_REQUEST),
-    BOOKING_TIME_IS_NOT_EMPTY(2302,"Danh sách thời gian đặt lịch không được để trống",HttpStatus.BAD_REQUEST),
-    BOOKING_TIME_ID_NOT_NULL(2303,"ID thời gian đặt lịch không được để trống",HttpStatus.BAD_REQUEST),
-    APPOINTMENT_ALREADY_STARTED(2304,"Lịch hẹn đã bắt đầu, không thể xóa thời gian đặt lịch",HttpStatus.BAD_REQUEST),
-    CANCEL_TOO_LATE(2305,"Hủy lịch hẹn quá muộn, trước lịch hẹn 2 tiếng không thể hủy",HttpStatus.BAD_REQUEST),
-    UPDATE_TOO_LATE(2306,"Cập nhật lịch hẹn quá muộn, trước lịch hẹn 2 tiếng không thể cập nhật",HttpStatus.BAD_REQUEST),
-    BOOKING_TIME_NOT_FOUND(2307,"Thời gian đặt lịch không tồn tại",HttpStatus.BAD_REQUEST),
-    BOOKING_TOO_LATE(2308,"Đặt lịch quá muộn, phải đặt lịch trước thời gian bắt đầu 2 tiếng",HttpStatus.BAD_REQUEST),
-    SLOT_FULL(2309,"Khung giờ đã đầy",HttpStatus.BAD_REQUEST),
-    DATE_OUT_OF_RANGE(2310,"Ngày đặt lịch không hợp lệ, phải trong khoảng từ hôm nay đến 14 ngày tới",HttpStatus.BAD_REQUEST),
-    OLD_TIME_NOT_NULL(2311,"Thời gian cũ không được để trống",HttpStatus.BAD_REQUEST),
-    NEW_TIME_NOT_NULL(2312,"Thời gian mới không được để trống",HttpStatus.BAD_REQUEST),
-    MAX_CAPACITY_MUST_BE_POSITIVE(2313,"Sức chứa tối đa phải là số dương",HttpStatus.BAD_REQUEST),
-    BOOKING_TIME_ALREADY_EXISTS(2314,"Thời gian đặt lịch đã tồn tại",HttpStatus.BAD_REQUEST),
+    // Booking Time (2300-2399)
+    START_TIME_IS_NOT_NULL(2300, "Thời gian bắt đầu không được để để trống", HttpStatus.BAD_REQUEST),
+    MAX_CAPACITY_IS_NOT_NULL(2301, "Sức chứa tối đa không được để trống", HttpStatus.BAD_REQUEST),
+    BOOKING_TIME_IS_NOT_EMPTY(2302, "Danh sách thời gian đặt lịch không được để trống", HttpStatus.BAD_REQUEST),
+    BOOKING_TIME_ID_NOT_NULL(2303, "ID thời gian đặt lịch không được để trống", HttpStatus.BAD_REQUEST),
+    APPOINTMENT_ALREADY_STARTED(2304, "Lịch hẹn đã bắt đầu, không thể xóa thời gian đặt lịch", HttpStatus.BAD_REQUEST),
+    CANCEL_TOO_LATE(2305, "Hủy lịch hẹn quá muộn, trước lịch hẹn 2 tiếng không thể hủy", HttpStatus.BAD_REQUEST),
+    UPDATE_TOO_LATE(2306, "Cập nhật lịch hẹn quá muộn, trước lịch hẹn 2 tiếng không thể cập nhật",
+            HttpStatus.BAD_REQUEST),
+    BOOKING_TIME_NOT_FOUND(2307, "Thời gian đặt lịch không tồn tại", HttpStatus.BAD_REQUEST),
+    BOOKING_TOO_LATE(2308, "Đặt lịch quá muộn, phải đặt lịch trước thời gian bắt đầu 2 tiếng", HttpStatus.BAD_REQUEST),
+    SLOT_FULL(2309, "Khung giờ đã đầy", HttpStatus.BAD_REQUEST),
+    DATE_OUT_OF_RANGE(2310, "Ngày đặt lịch không hợp lệ, phải trong khoảng từ hôm nay đến 14 ngày tới",
+            HttpStatus.BAD_REQUEST),
+    OLD_TIME_NOT_NULL(2311, "Thời gian cũ không được để trống", HttpStatus.BAD_REQUEST),
+    NEW_TIME_NOT_NULL(2312, "Thời gian mới không được để trống", HttpStatus.BAD_REQUEST),
+    MAX_CAPACITY_MUST_BE_POSITIVE(2313, "Sức chứa tối đa phải là số dương", HttpStatus.BAD_REQUEST),
+    BOOKING_TIME_ALREADY_EXISTS(2314, "Thời gian đặt lịch đã tồn tại", HttpStatus.BAD_REQUEST),
 
-    //Pets(2400-2499)
-    PET_IS_EXISTED(2400,"Thú cưng đã tồn tại",HttpStatus.BAD_REQUEST)
-    ,PET_NOT_FOUND(2401,"Thú cưng không tồn tại",HttpStatus.NOT_FOUND)
-    ,PET_MUST_HAVE_IMAGE(2402,"Thú cưng phải có ít nhất một hình ảnh",HttpStatus.BAD_REQUEST),
-    CANNOT_RESTORE_PET_ADOPTED(2403,"Không thể khôi phục thú cưng đã được nhận nuôi",HttpStatus.BAD_REQUEST),
+    // Pets(2400-2499)
+    PET_IS_EXISTED(2400, "Thú cưng đã tồn tại", HttpStatus.BAD_REQUEST),
+    PET_NOT_FOUND(2401, "Thú cưng không tồn tại", HttpStatus.NOT_FOUND),
+    PET_MUST_HAVE_IMAGE(2402, "Thú cưng phải có ít nhất một hình ảnh", HttpStatus.BAD_REQUEST),
+    CANNOT_RESTORE_PET_ADOPTED(2403, "Không thể khôi phục thú cưng đã được nhận nuôi", HttpStatus.BAD_REQUEST),
 
-    //Adopt(2500-2599)
-    ADOPT_NOT_FOUND(2500,"Yêu cầu nhận nuôi không tồn tại",HttpStatus.NOT_FOUND),
-    CANNOT_CANCEL_ADOPT(2501,"Không thể hủy yêu cầu nhận nuôi này",HttpStatus.BAD_REQUEST)
+    // Adopt(2500-2599)
+    ADOPT_NOT_FOUND(2500, "Yêu cầu nhận nuôi không tồn tại", HttpStatus.NOT_FOUND),
+    CANNOT_CANCEL_ADOPT(2501, "Không thể hủy yêu cầu nhận nuôi này", HttpStatus.BAD_REQUEST)
 
     ;
 

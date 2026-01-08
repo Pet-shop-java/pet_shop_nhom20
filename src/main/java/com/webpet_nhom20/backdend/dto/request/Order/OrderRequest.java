@@ -23,7 +23,7 @@ public class OrderRequest {
 
     String paymentMethod;
 
-    String shippingAddress;
+    Integer addressId;
 
     String note;
 

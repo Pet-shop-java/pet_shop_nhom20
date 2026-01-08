@@ -1,6 +1,5 @@
 package com.webpet_nhom20.backdend.entity;
 
-
 import com.webpet_nhom20.backdend.enums.PaymentMethod;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -30,12 +29,16 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
 
-    @Column(name = "order_code" , nullable = false)
+    @Column(name = "order_code", nullable = false)
     String orderCode;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "address_id")
+    private Addresses address;
 
     @OneToMany(mappedBy = "order")
     private Set<OrderItems> orderItems;
@@ -43,38 +46,34 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Payment> payments = new ArrayList<>();
 
-    @Column(name = "payment_method",nullable =false )
+    @Column(name = "payment_method", nullable = false)
     private String paymentMethod;
 
-    @Column(name = "total_amount" , nullable = false)
+    @Column(name = "total_amount", nullable = false)
     BigDecimal totalAmount;
 
     @Column(name = "payment_expired_at")
     private LocalDateTime paymentExpiredAt;
 
-    @Column(name = "shipping_amount" , nullable = false)
+    @Column(name = "shipping_amount", nullable = false)
     BigDecimal shippingAmount;
 
-    @Column(
-            name = "final_amount",
-            insertable = false,
-            updatable = false
-    )
+    @Column(name = "final_amount", insertable = false, updatable = false)
     BigDecimal finalAmount;
 
-    @Column(name = "discount_amount" )
+    @Column(name = "discount_amount")
     Float discountPercent;
 
-    @Column(name = "shipping_address" , nullable = false , length = 500)
-    String shippingAddress ;
+    @Column(name = "shipping_address", length = 500)
+    String shippingAddress; // Nullable for backward compatibility - new orders use address relationship
 
-    @Column(name = "status" , nullable = false)
+    @Column(name = "status", nullable = false)
     String status;
 
-    @Column(name = "note" , length = 500)
+    @Column(name = "note", length = 500)
     String note;
 
-    @Column(name = "is_deleted" , length = 1)
+    @Column(name = "is_deleted", length = 1)
     String isDeleted = "0";
 
     @Basic
@@ -86,7 +85,6 @@ public class Order {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "updated_date")
     Date updatedDate;
-
 
     @PrePersist
     protected void onCreate() {

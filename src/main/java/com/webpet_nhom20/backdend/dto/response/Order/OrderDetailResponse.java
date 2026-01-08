@@ -18,6 +18,14 @@ public class OrderDetailResponse {
     private BigDecimal shippingAmount;
     private BigDecimal totalAmount;
     private String shippingAddress;
+    // Address details from address relationship
+    private Integer addressId;
+    private String contactName;
+    private String phone;
+    private String detailAddress;
+    private String ward;
+    private String state;
+    private String city;
     private Date orderDate;
 
     private Integer orderItemId;

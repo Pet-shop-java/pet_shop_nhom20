@@ -16,9 +16,7 @@ import com.webpet_nhom20.backdend.enums.PaymentMethod;
 import com.webpet_nhom20.backdend.exception.AppException;
 import com.webpet_nhom20.backdend.exception.ErrorCode;
 import com.webpet_nhom20.backdend.exception.GlobalExceptionHandler;
-import com.webpet_nhom20.backdend.repository.OrderItemRepository;
-import com.webpet_nhom20.backdend.repository.OrderRepository;
-import com.webpet_nhom20.backdend.repository.ProductVariantRepository;
+import com.webpet_nhom20.backdend.repository.*;
 import com.webpet_nhom20.backdend.repository.projection.OrderDetailProjection;
 import com.webpet_nhom20.backdend.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +61,10 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private ProductVariantRepository productVariantRepository;
+    @Autowired
+    private CartItemRepository cartItemRepository;
+    @Autowired
+    private CartRepository cartRepository;
 
     @Override
     @PreAuthorize("hasRole('CUSTOMER')")
@@ -143,6 +145,15 @@ public class OrderServiceImpl implements OrderService {
         order.setNote(request.getNote());
 
         Order savedOrder = orderRepository.save(order);
+
+        // ================== 6. DELETE CART ==================
+
+        Optional<Cart> card = cartRepository.findByUserId(user.getId());
+        int cardId = card.isPresent() ? card.get().getId() : 0;
+
+        for (OrderItemRequest itemReq : request.getItems()) {
+            cartItemRepository.deleteByCartIdAndProductVariantId(cardId, itemReq.getProductVariantId());
+        }
 
         // ================== 5. CREATE ORDER ITEMS ==================
         List<OrderItems> savedItems = new ArrayList<>();

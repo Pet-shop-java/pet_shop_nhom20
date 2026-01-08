@@ -20,6 +20,7 @@ import com.webpet_nhom20.backdend.service.AdoptService;
 import com.webpet_nhom20.backdend.service.AsyncEmailService;
 import com.webpet_nhom20.backdend.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
@@ -226,6 +227,7 @@ public class AdoptServiceImpl implements AdoptService {
 
         @Override
         @Transactional
+        @CacheEvict(value = { "pet_list", "pet_detail" }, allEntries = true)
         public AdoptResponse updateStatusAdopt(int adoptId, String status) {
 
                 Adopt adopt = adoptRepository.findById(adoptId)

@@ -17,6 +17,8 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariants,
     boolean existsByVariantName(String name);
     boolean existsByProductIdAndVariantName(int productId, String variantName);
     Optional<ProductVariants> findByIdAndIsDeletedNot(Integer id, String isDeleted);
+
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT v FROM ProductVariants v WHERE v.id = :id")
     Optional<ProductVariants> findByIdForUpdate(@Param("id") Long id);

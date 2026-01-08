@@ -335,6 +335,19 @@ public class ProductServiceImpl implements ProductService {
         Products products = productRepository.findById(productId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
         productMapper.updateProduct(products, request);
+
+
+        List<ProductVariants> variants = productVariantRepository.findByProductId(productId);
+
+        for (ProductVariants variant : variants) {
+            if(request.getIsDeleted().equals("0")) {
+                variant.setIsDeleted("0");
+            }else if(request.getIsDeleted().equals("1")) {
+                variant.setIsDeleted("1");
+            }
+
+
+        }
         return productMapper.toProductResponse(productRepository.save(products));
     }
 
@@ -348,6 +361,11 @@ public class ProductServiceImpl implements ProductService {
             return "Sản phẩm đã bị xóa trước đó";
         }
         products.setIsDeleted("1");
+        List<ProductVariants> variants = productVariantRepository.findByProductId(productId);
+        for (ProductVariants variant : variants) {
+            variant.setIsDeleted("1");
+        }
+        productVariantRepository.saveAll(variants);
         productRepository.save(products);
         return "Xóa thành công";
     }

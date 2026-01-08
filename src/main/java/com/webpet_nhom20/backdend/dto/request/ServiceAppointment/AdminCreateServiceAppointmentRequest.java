@@ -1,5 +1,6 @@
 package com.webpet_nhom20.backdend.dto.request.ServiceAppointment;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -48,5 +49,6 @@ public class AdminCreateServiceAppointmentRequest {
      * - Tối đa 500 ký tự
      */
     @Size(max = 500, message = "NOTES_TOO_LONG")
+    @JsonFormat()
     private String notes;
 }

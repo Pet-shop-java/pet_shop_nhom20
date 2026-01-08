@@ -91,6 +91,9 @@ public class ServicesAppointmentsServiceImpl implements ServicesAppointmentsServ
 
                 appointment.setNamePet(request.getNamePet());
                 appointment.setSpeciePet(request.getSpeciePet());
+
+
+
                 appointment.setNotes(request.getNotes());
 
                 LocalDateTime start = bookingTime.getSlotDate()
@@ -388,8 +391,10 @@ public class ServicesAppointmentsServiceImpl implements ServicesAppointmentsServ
 
                 // 6️⃣ Update status
                 existingAppointment.setStatus(AppoinmentStatus.CANCELED);
+                DateTimeFormatter formatter =
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
                 existingAppointment.setNotes(
-                                "Cuộc hẹn đã bị hủy lúc " + LocalDateTime.now());
+                                "Cuộc hẹn đã bị hủy lúc " + LocalDateTime.now().format(formatter));
 
                 // 7️⃣ Hoàn slot (rất quan trọng)
                 BookingTime bookingTime = existingAppointment.getBookingTime();

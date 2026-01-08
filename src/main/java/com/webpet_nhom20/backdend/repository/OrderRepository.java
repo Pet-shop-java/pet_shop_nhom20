@@ -75,6 +75,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
       AND (:fromDate IS NULL OR o.createdDate >= :fromDate)
       AND (:toDate IS NULL OR o.createdDate <= :toDate)
       AND o.isDeleted = '0'
+      ORDER BY o.createdDate DESC
+      
 """)
     Page<Order> searchOrders(
             @Param("orderCode") String orderCode,

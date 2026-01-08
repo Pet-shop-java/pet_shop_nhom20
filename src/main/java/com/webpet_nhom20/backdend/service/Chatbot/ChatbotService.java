@@ -43,11 +43,13 @@ public class ChatbotService {
                 ? UUID.randomUUID().toString()
                 : sessionId;
 
-        // 1️⃣ Query sản phẩm VÀ dịch vụ từ DB
+        // 1️⃣ Query sản phẩm, dịch vụ VÀ thú cưng từ DB
         List<Products> products = productQueryService.searchProducts(question, 5);
         List<com.webpet_nhom20.backdend.entity.ServicesPet> services = productQueryService.searchServices(5);
+        List<com.webpet_nhom20.backdend.entity.Pets> pets = productQueryService.searchPets(5);
 
-        System.out.println("DB QUERY: " + products.size() + " products, " + services.size() + " services");
+        System.out.println("DB QUERY: " + products.size() + " products, " + services.size() + " services, "
+                + pets.size() + " pets");
 
         // 2️⃣ Decision / Confidence Check
         List<ChatMessage> storedHistory = chatHistoryStore.getHistory(sid, HISTORY_LIMIT);
@@ -55,14 +57,14 @@ public class ChatbotService {
                 ? history
                 : storedHistory;
 
-        // Chỉ check products để quyết định, vì có thể user hỏi về service
-        DecistionType decision = (products.isEmpty() && services.isEmpty())
+        // Check tất cả nguồn data
+        DecistionType decision = (products.isEmpty() && services.isEmpty() && pets.isEmpty())
                 ? DecistionType.OUT_OF_SCOPE
                 : DecistionType.ALLOW_IG;
         System.out.println("DECISION = " + decision);
 
-        // Build context từ cả sản phẩm VÀ services
-        String context = dbContextBuilder.buildCombined(products, services);
+        // Build context từ sản phẩm, dịch vụ VÀ thú cưng
+        String context = dbContextBuilder.buildCombined(products, services, pets);
         String historyText = formatHistory(historyForPrompt);
 
         // 4️⃣ Trả lời NGAY – KHÔNG GỌI LLM

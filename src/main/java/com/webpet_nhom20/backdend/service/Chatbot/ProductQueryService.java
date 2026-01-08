@@ -1,9 +1,11 @@
 package com.webpet_nhom20.backdend.service.Chatbot;
 
 import com.webpet_nhom20.backdend.entity.Categories;
+import com.webpet_nhom20.backdend.entity.Pets;
 import com.webpet_nhom20.backdend.entity.Products;
 import com.webpet_nhom20.backdend.entity.ServicesPet;
 import com.webpet_nhom20.backdend.repository.CategoryRepository;
+import com.webpet_nhom20.backdend.repository.PetRepository;
 import com.webpet_nhom20.backdend.repository.ProductRepository;
 import com.webpet_nhom20.backdend.repository.ServicesPetRepository;
 import org.springframework.data.domain.Page;
@@ -17,28 +19,33 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Service để query sản phẩm VÀ dịch vụ từ DB (với caching)
+ * Service để query sản phẩm, dịch vụ VÀ thú cưng từ DB (với caching)
  */
 @Service
 public class ProductQueryService {
 
     private final ProductRepository productRepository;
     private final ServicesPetRepository servicesPetRepository;
+    private final PetRepository petRepository;
     private final CategoryRepository categoryRepository;
 
     // Cache
     private static final Duration CACHE_TTL = Duration.ofMinutes(10); // Cache 10 phút
     private List<Products> cachedProducts = null;
     private List<ServicesPet> cachedServices = null;
+    private List<Pets> cachedPets = null;
     private Instant productsLastFetch = null;
     private Instant servicesLastFetch = null;
+    private Instant petsLastFetch = null;
 
     public ProductQueryService(
             ProductRepository productRepository,
             ServicesPetRepository servicesPetRepository,
+            PetRepository petRepository,
             CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
         this.servicesPetRepository = servicesPetRepository;
+        this.petRepository = petRepository;
         this.categoryRepository = categoryRepository;
     }
 
@@ -137,6 +144,50 @@ public class ProductQueryService {
         cachedServices = results;
         servicesLastFetch = Instant.now();
         System.out.println("💾 Cached " + results.size() + " services");
+
+        return results;
+    }
+
+    /**
+     * Search thú cưng từ DB (với cache)
+     *
+     * @param limit số lượng thú cưng tối đa
+     * @return danh sách thú cưng
+     */
+    @Transactional(readOnly = true)
+    public List<Pets> searchPets(int limit) {
+        // Check cache
+        if (cachedPets != null && petsLastFetch != null) {
+            Duration age = Duration.between(petsLastFetch, Instant.now());
+            if (age.compareTo(CACHE_TTL) < 0) {
+                System.out.println(
+                        "✅ Using CACHED pets (" + cachedPets.size() + " items, age: " + age.toSeconds() + "s)");
+                return cachedPets.subList(0, Math.min(limit, cachedPets.size()));
+            }
+        }
+
+        System.out.println("🔍 ProductQueryService: Querying pets from DB (limit=" + limit + ")");
+
+        Pageable pageable = PageRequest.of(0, limit);
+        // Query pets available (status != "adopted", is_deleted = "0")
+        Page<Pets> page = petRepository.findAllWithFilters(
+                null, // animal
+                null, // minWeight
+                null, // maxWeight
+                null, // ageGroup
+                null, // breed
+                null, // name
+                "available", // status - chỉ lấy pets available
+                "0", // isDelete
+                pageable);
+
+        List<Pets> results = page.getContent();
+        System.out.println("✅ Found " + results.size() + " pets");
+
+        // Save to cache
+        cachedPets = results;
+        petsLastFetch = Instant.now();
+        System.out.println("💾 Cached " + results.size() + " pets");
 
         return results;
     }

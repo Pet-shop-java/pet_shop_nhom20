@@ -92,8 +92,6 @@ public class ServicesAppointmentsServiceImpl implements ServicesAppointmentsServ
                 appointment.setNamePet(request.getNamePet());
                 appointment.setSpeciePet(request.getSpeciePet());
 
-
-
                 appointment.setNotes(request.getNotes());
 
                 LocalDateTime start = bookingTime.getSlotDate()
@@ -343,6 +341,30 @@ public class ServicesAppointmentsServiceImpl implements ServicesAppointmentsServ
                 // Shop update status
                 if ("SHOP".equals(role) && request.getStatus() != null) {
                         appointment.setStatus(request.getStatus());
+
+                        // Gửi email thông báo cập nhật trạng thái cho khách hàng
+                        try {
+                                User user = appointment.getUser();
+                                ServicesPet service = appointment.getService();
+
+                                String subject = CommonUtil.buildAppointmentStatusUpdateEmailSubject(
+                                                request.getStatus().name(),
+                                                user.getFullName());
+
+                                String html = CommonUtil.buildAppointmentStatusUpdateEmailHtml(
+                                                appointment,
+                                                user.getFullName(),
+                                                user.getPhone(),
+                                                service.getTitle(),
+                                                request.getStatus().name());
+
+                                asyncEmailService.sendAppointmentEmail(
+                                                user.getEmail(),
+                                                subject,
+                                                html);
+                        } catch (Exception ignored) {
+                                // Email sending failure should not fail the status update
+                        }
                 }
 
                 ServiceAppointments saved = servicesAppointmentsRepository.save(appointment);
@@ -391,8 +413,7 @@ public class ServicesAppointmentsServiceImpl implements ServicesAppointmentsServ
 
                 // 6️⃣ Update status
                 existingAppointment.setStatus(AppoinmentStatus.CANCELED);
-                DateTimeFormatter formatter =
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
                 existingAppointment.setNotes(
                                 "Cuộc hẹn đã bị hủy lúc " + LocalDateTime.now().format(formatter));
 

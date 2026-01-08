@@ -79,6 +79,107 @@ public class CommonUtil {
 				.replace("'", "&#39;");
 	}
 
+	// Mail cập nhật trạng thái lịch hẹn
+	public static String buildAppointmentStatusUpdateEmailSubject(
+			String status,
+			String userFullName) {
+		String statusText = getStatusText(status);
+		return "Cập nhật trạng thái lịch hẹn - " + statusText + " cho anh/chị " + userFullName;
+	}
+
+	public static String buildAppointmentStatusUpdateEmailHtml(
+			ServiceAppointments appointment,
+			String userFullName,
+			String userPhone,
+			String serviceName,
+			String newStatus) {
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
+		String start = appointment.getAppointmentStart().format(formatter);
+		String end = appointment.getAppointmentEnd().format(formatter);
+		String petName = appointment.getNamePet() == null ? "(Không có)" : appointment.getNamePet();
+		String speciePet = appointment.getSpeciePet() == null ? "(Không có)" : appointment.getSpeciePet();
+		String safePhone = userPhone == null ? "(Không có)" : userPhone;
+		String statusText = getStatusText(newStatus);
+		String statusColor = getStatusColor(newStatus);
+
+		String shopName = "Pet Shop";
+		String supportPhone = "+84 912 345 678";
+		String supportEmail = "support@petshop.vn";
+		String address = "123 Đường ABC, Thường Tín, TP.Hà Nội";
+
+		return "<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#1f2937\">" +
+				"<div style=\"display:flex;align-items:center;gap:12px;margin-bottom:12px\">" +
+				"<h2 style=\"color:#ffc107;margin:0\">" + shopName + "</h2>" +
+				"</div>" +
+				"<h3 style=\"color:#111827;margin:0 0 12px\">Cập nhật trạng thái lịch hẹn</h3>" +
+				"<p>Chào <strong>" + userFullName + "</strong>,</p>" +
+				"<p>Lịch hẹn của bạn tại <strong>Pet Shop</strong> đã được cập nhật. Trạng thái mới:</p>" +
+				"<div style=\"margin:16px 0;text-align:center\">" +
+				"<span style=\"" +
+				"display:inline-block;" +
+				"padding:12px 24px;" +
+				"font-size:18px;" +
+				"font-weight:bold;" +
+				"color:#fff;" +
+				"background:" + statusColor + ";" +
+				"border-radius:8px" +
+				"\">" + statusText + "</span>" +
+				"</div>" +
+				"<p style=\"margin-top:16px\">Thông tin lịch hẹn:</p>" +
+				"<table style=\"border-collapse:collapse;width:100%;max-width:560px\">" +
+				"<tbody>" +
+				row("Dịch vụ", serviceName) +
+				row("Họ và tên", userFullName) +
+				row("Số điện thoại", safePhone) +
+				row("Tên loài", speciePet) +
+				row("Tên thú cưng", petName) +
+				row("Bắt đầu", start) +
+				row("Kết thúc", end) +
+				"</tbody></table>" +
+				"<p style=\"margin-top:16px\">Nếu có thắc mắc, vui lòng liên hệ chúng tôi qua hotline hoặc email.</p>" +
+				"<div style=\"margin-top:20px;padding-top:12px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:13px\">"
+				+
+				"<p style=\"margin:0\"><strong>" + shopName + "</strong></p>" +
+				"<p style=\"margin:0\">" + address + "</p>" +
+				"<p style=\"margin:0\">Hotline: " + supportPhone + " · Email: " + supportEmail + "</p>" +
+				"</div>" +
+				"</div>";
+	}
+
+	private static String getStatusText(String status) {
+		switch (status) {
+			case "SCHEDULED":
+				return "Đã đặt lịch";
+			case "CONFIRMED":
+				return "Đã xác nhận";
+			case "IN_PROGRESS":
+				return "Đang thực hiện";
+			case "COMPLETED":
+				return "Hoàn thành";
+			case "CANCELED":
+				return "Đã hủy";
+			default:
+				return status;
+		}
+	}
+
+	private static String getStatusColor(String status) {
+		switch (status) {
+			case "SCHEDULED":
+				return "#3b82f6"; // blue
+			case "CONFIRMED":
+				return "#8b5cf6"; // purple
+			case "IN_PROGRESS":
+				return "#f59e0b"; // amber
+			case "COMPLETED":
+				return "#10b981"; // green
+			case "CANCELED":
+				return "#ef4444"; // red
+			default:
+				return "#6b7280"; // gray
+		}
+	}
+
 	// Mail đăng ký
 	public static String buildOtpEmailSubject(String purpose) {
 		return "Mã xác thực OTP - " + purpose;
